@@ -6,9 +6,13 @@ public class FormLogRequest {
 	
 	private String mobileNumber;
     private String transactionId;
-    private Map<String, Object> request;  // your formSubmissionData
-    private String response;
+//    private Map<String, Object> request;  // your formSubmissionData
+    private ONDCFormDataDTO ondcFormDataDTO;
+    private Object response;
     private String gatewayUrl;
+    private String formSubmissionStatus;
+    private String productName;
+    
 	public String getMobileNumber() {
 		return mobileNumber;
 	}
@@ -21,16 +25,16 @@ public class FormLogRequest {
 	public void setTransactionId(String transactionId) {
 		this.transactionId = transactionId;
 	}
-	public Map<String, Object> getRequest() {
-		return request;
+	public ONDCFormDataDTO getOndcFormDataDTO() {
+		return ondcFormDataDTO;
 	}
-	public void setRequest(Map<String, Object> request) {
-		this.request = request;
+	public void setOndcFormDataDTO(ONDCFormDataDTO ondcFormDataDTO) {
+		this.ondcFormDataDTO = ondcFormDataDTO;
 	}
-	public String getResponse() {
+	public Object getResponse() {
 		return response;
 	}
-	public void setResponse(String response) {
+	public void setResponse(Object response) {
 		this.response = response;
 	}
 	public String getGatewayUrl() {
@@ -39,7 +43,17 @@ public class FormLogRequest {
 	public void setGatewayUrl(String gatewayUrl) {
 		this.gatewayUrl = gatewayUrl;
 	}
-    
-     
+	public String getFormSubmissionStatus() {
+		return formSubmissionStatus;
+	}
+	public void setFormSubmissionStatus(String formSubmissionStatus) {
+		this.formSubmissionStatus = formSubmissionStatus;
+	}
+	public String getProductName() {
+		return productName;
+	}
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
 
 }

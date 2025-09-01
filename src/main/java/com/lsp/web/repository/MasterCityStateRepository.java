@@ -30,6 +30,9 @@ public interface MasterCityStateRepository extends JpaRepository<Master_City_Sta
 	
 	@Query("SELECT DISTINCT m.city FROM Master_City_State m ORDER BY m.city ASC")
     List<String> findAllDistinctCities();
+	
+//	Optional<Master_City_State> findByPincodeAndProductName(Integer pincode, String productName);
+	
 
 }
 

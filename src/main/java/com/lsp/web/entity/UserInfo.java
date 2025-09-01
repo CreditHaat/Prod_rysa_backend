@@ -46,6 +46,8 @@ public class UserInfo extends BaseEntity {
 	private String spouseName;
 	private Integer maritalStatus;
 	
+	private String panName;
+	
 	@Column(length = 500)
 	private String address;
 	
@@ -62,6 +64,19 @@ public class UserInfo extends BaseEntity {
 	private String YOE;
 	@Column(name = "active", nullable = false)
 	private Integer active;
+	
+//	private String creditProfile;
+	
+	@Column(name = "agent_id", length = 20)
+	 private Integer agentId;
+	    
+   @Column(name = "agent", length = 30)
+   private String agent;
+   
+   @Column(name = "credit_profile")
+   private String creditProfile;
+	
+	
 
 	public Integer getActive() {
 	    return active;
@@ -208,8 +223,54 @@ public class UserInfo extends BaseEntity {
 	public void setYOE(String yOE) {
 		YOE = yOE;
 	}
-	
-	
+
+	public String getEncryptedMobileNumber() {
+		return encryptedMobileNumber;
+	}
+
+	public void setEncryptedMobileNumber(String encryptedMobileNumber) {
+		this.encryptedMobileNumber = encryptedMobileNumber;
+	}
+
+//	public String getCreditProfile() {
+//		return creditProfile;
+//	}
+//
+//	public void setCreditProfile(String creditProfile) {
+//		this.creditProfile = creditProfile;
+//	}
+
+	public String getPanName() {
+		return panName;
+	}
+
+	public void setPanName(String panName) {
+		this.panName = panName;
+	}
+
+	public Integer getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(Integer agentId) {
+		this.agentId = agentId;
+	}
+
+	public String getAgent() {
+		return agent;
+	}
+
+	public void setAgent(String agent) {
+		this.agent = agent;
+	}
+
+	public String getCreditProfile() {
+		return creditProfile;
+	}
+
+	public void setCreditProfile(String creditProfile) {
+		this.creditProfile = creditProfile;
+	}
 	
     
 }

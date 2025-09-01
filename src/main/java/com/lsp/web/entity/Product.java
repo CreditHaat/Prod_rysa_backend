@@ -154,6 +154,9 @@ public class Product extends BaseEntity {
     @Column(name = "short_applink_redirection", length = 2000)
     private String short_applink_redirection;
     
+    @Column(name = "ntc", columnDefinition="INT NOT NULL default 0")
+    private Integer ntc;
+    
     @Column(name="bpp_id")
     private String bppId;
 
@@ -548,6 +551,14 @@ public class Product extends BaseEntity {
 
 	public void setShort_applink_redirection(String short_applink_redirection) {
 		this.short_applink_redirection = short_applink_redirection;
+	}
+
+	public Integer getNtc() {
+		return ntc;
+	}
+
+	public void setNtc(Integer ntc) {
+		this.ntc = ntc;
 	}
 
 	public String getBppId() {

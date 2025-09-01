@@ -86,10 +86,11 @@ public class Master_City_State extends BaseEntity {
     private String state;
 //    private String MeraKal;
     private String cityId;
-    private String hdb;
-    private String kisht;
-    private String abcl;
-    private String bfl;
+    private String HDB;
+    private String Kissht;
+    private String ABCL;
+    private String BFL;
+    private String CreditHaat;
 
     // === GETTERS & SETTERS ===
 
@@ -112,30 +113,67 @@ public class Master_City_State extends BaseEntity {
 
     public String getCityId() { return cityId; }
     public void setCityId(String cityId) { this.cityId = cityId; }
-	public String getHdb() {
-		return hdb;
+//	public String getHdb() {
+//		return hdb;
+//	}
+//	public void setHdb(String hdb) {
+//		this.hdb = hdb;
+//	}
+//	public String getKissht() {
+//		return kissht;
+//	}
+//	public void setKissht(String kissht) {
+//		this.kissht = kissht;
+//	}
+//	public String getAbcl() {
+//		return abcl;
+//	}
+//	public void setAbcl(String abcl) {
+//		this.abcl = abcl;
+//	}
+//	public String getBfl() {
+//		return bfl;
+//	}
+//	public void setBfl(String bfl) {
+//		this.bfl = bfl;
+//	}
+//	public String getCredithaat() {
+//		return credithaat;
+//	}
+//	public void setCredithaat(String credithaat) {
+//		this.credithaat = credithaat;
+//	}
+	public String getHDB() {
+		return HDB;
 	}
-	public void setHdb(String hdb) {
-		this.hdb = hdb;
+	public void setHDB(String hDB) {
+		HDB = hDB;
 	}
-	public String getKisht() {
-		return kisht;
+	public String getKissht() {
+		return Kissht;
 	}
-	public void setKisht(String kisht) {
-		this.kisht = kisht;
+	public void setKissht(String kissht) {
+		Kissht = kissht;
 	}
-	public String getAbcl() {
-		return abcl;
+	public String getABCL() {
+		return ABCL;
 	}
-	public void setAbcl(String abcl) {
-		this.abcl = abcl;
+	public void setABCL(String aBCL) {
+		ABCL = aBCL;
 	}
-	public String getBfl() {
-		return bfl;
+	public String getBFL() {
+		return BFL;
 	}
-	public void setBfl(String bfl) {
-		this.bfl = bfl;
+	public void setBFL(String bFL) {
+		BFL = bFL;
 	}
+	public String getCreditHaat() {
+		return CreditHaat;
+	}
+	public void setCreditHaat(String creditHaat) {
+		CreditHaat = creditHaat;
+	}
+    
     
     
 

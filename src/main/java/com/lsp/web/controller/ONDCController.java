@@ -12,6 +12,7 @@ import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lsp.web.Exception.LoanNotFoundException;
 import com.lsp.web.ONDCService.ConfirmService;
 import com.lsp.web.ONDCService.DisbursedLoanService;
@@ -54,6 +56,7 @@ import com.lsp.web.ONDCService.UpdateService;
 import com.lsp.web.dto.ConfirmRequestDTO;
 import com.lsp.web.dto.DisbursedLoanDTO2;
 import com.lsp.web.dto.ForeclosureUpdateRequestDTO;
+import com.lsp.web.dto.FormLogRequest;
 import com.lsp.web.dto.InitRequestDTO;
 import com.lsp.web.dto.MissedPaymentUpdateRequestDTO;
 import com.lsp.web.dto.SearchRequestDTO;
@@ -64,8 +67,10 @@ import com.lsp.web.dto.UpdatePaymentRequestDTO;
 import com.lsp.web.dto.UpdateRequestDTO;
 import com.lsp.web.entity.Master_City_State;
 import com.lsp.web.entity.Product;
+import com.lsp.web.entity.UserInfo;
 import com.lsp.web.repository.MasterCityStateRepository;
 import com.lsp.web.repository.ProductRepository;
+import com.lsp.web.repository.UserInfoRepository;
 
 import ondc.onboarding.utility.Routes;
 import ondc.onboarding.utility.Utils;
@@ -102,6 +107,9 @@ public class ONDCController extends Utils {
 	
 	@Autowired
 	private ProductRepository productRepository;
+	
+	@Autowired
+	private UserInfoRepository userInfoRepository;
 
 	@GetMapping("/createTransactionId")
 	public ResponseEntity<?> createId() {
@@ -313,17 +321,17 @@ public class ONDCController extends Utils {
 			List<Product> finalproductList = new ArrayList<>();
 			for(Product product : products) {
 //				tejas
-				if(product.getProductName().equalsIgnoreCase("kisht")) {
+				if(product.getProductName().equalsIgnoreCase("Kissht")) {
 					
-					if(masterCityState.getKisht()!=null && masterCityState.getKisht().equalsIgnoreCase("y")) {
+					if(masterCityState.getKissht()!=null && masterCityState.getKissht().equalsIgnoreCase("y")) {
 						finalproductList.add(product);
 					}
-				}else if(product.getProductName().equalsIgnoreCase("abcl")) {
-					if(masterCityState.getAbcl()!=null && masterCityState.getAbcl().equalsIgnoreCase("y")) {
+				}else if(product.getProductName().equalsIgnoreCase("ABCL")) {
+					if(masterCityState.getABCL()!=null && masterCityState.getABCL().equalsIgnoreCase("y")) {
 						finalproductList.add(product);
 					}
-				}else if(product.getProductName().equalsIgnoreCase("bfl")) {
-					if(masterCityState.getBfl()!=null && masterCityState.getBfl().equalsIgnoreCase("y")) {
+				}else if(product.getProductName().equalsIgnoreCase("BFL")) {
+					if(masterCityState.getBFL()!=null && masterCityState.getBFL().equalsIgnoreCase("y")) {
 						finalproductList.add(product);
 					}
 				}
@@ -335,6 +343,91 @@ public class ONDCController extends Utils {
 		}
 		
 		return null;
+	}
+	
+	@PostMapping("WriteFormLogs")
+	public ResponseEntity<?> writeFormLogs(@RequestBody FormLogRequest formLogRequest){
+		try {
+			
+			String mobilenumber = formLogRequest.getOndcFormDataDTO().getContactNumber();
+			String ondcFormDTOJSON = null;
+			if(formLogRequest.getOndcFormDataDTO()!=null) {
+				ObjectMapper mapper = new ObjectMapper(); // ✅ create instance
+	            ondcFormDTOJSON = mapper.writeValueAsString(formLogRequest.getOndcFormDataDTO());
+			}
+			String responseJSON = null;
+			if(formLogRequest.getResponse()!=null) {
+				ObjectMapper mapper = new ObjectMapper();
+				responseJSON =mapper.writeValueAsString(formLogRequest.getResponse());
+			}
+			
+			String gatewayUrl = formLogRequest.getGatewayUrl();
+			String transactionId = formLogRequest.getTransactionId();
+			String formSubmissionStatus = formLogRequest.getFormSubmissionStatus();
+			String productName = formLogRequest.getProductName();
+			searchService.writeFormLogs(mobilenumber, ondcFormDTOJSON, responseJSON, gatewayUrl, transactionId, formSubmissionStatus, productName);
+			return ResponseEntity.ok("DONE"); 
+		}catch(Exception e) {
+			 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		                .body(Map.of("status", "error", "message", e.getMessage()));
+		}
+	}
+	
+	@PostMapping("/getUserDetails")
+	public ResponseEntity<?> getUserDetails(@RequestParam(name="mobileNumber") String mobileNumber){
+		try {
+			Optional<UserInfo> userInfo = userInfoRepository.findByMobileNumber(mobileNumber);
+			if(userInfo.isEmpty()) {
+				return null;
+			}
+			
+			Map<String, Object> map = new HashMap<>();
+			map.put("workPincode", userInfo.get().getWorkPincode());
+			map.put("maritalStatus", userInfo.get().getMaritalStatus());
+			map.put("paymentType", userInfo.get().getPaymentType());
+			
+			return ResponseEntity.ok(map);
+		}catch(Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
+	}
+	
+	@PostMapping("/getUserInfo")
+	public ResponseEntity<?> getUserInfo(@RequestParam(name="mobileNumber") String mobileNumber){
+		try {
+			Optional<UserInfo> userInfo = userInfoRepository.findByMobileNumber(mobileNumber);
+			if(userInfo.isEmpty()) {
+				return null;
+			}
+			
+//			Map<String, Object> map = new HashMap<>();
+//			map.put("workPincode", userInfo.get().getWorkPincode());
+//			map.put("maritalStatus", userInfo.get().getMaritalStatus());
+//			map.put("paymentType", userInfo.get().getPaymentType());
+			
+			return ResponseEntity.ok(userInfo.get());
+		}catch(Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
+	}
+	
+	@PostMapping("/getProductByStatus")
+	public ResponseEntity<?> getProductByStatus(@RequestParam(name="status") int status ){
+		try {
+			List<Product> products = productRepository.findByStatus(status);
+			
+			return ResponseEntity.ok(products);
+//			Map<String, Object> map = new HashMap<>();
+//			map.put("workPincode", userInfo.get().getWorkPincode());
+//			map.put("maritalStatus", userInfo.get().getMaritalStatus());
+//			map.put("paymentType", userInfo.get().getPaymentType());
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
 	}
 
 }

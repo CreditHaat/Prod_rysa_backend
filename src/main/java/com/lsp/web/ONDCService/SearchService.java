@@ -32,10 +32,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lsp.web.Exception.UserInfoNotFoundException;
 import com.lsp.web.dto.ONDCFormDataDTO;
+import com.lsp.web.entity.ApplyFail;
 import com.lsp.web.entity.Callback;
 import com.lsp.web.entity.JourneyLog;
 import com.lsp.web.entity.Logger;
 import com.lsp.web.entity.UserInfo;
+import com.lsp.web.repository.ApplyFailRepository;
 import com.lsp.web.repository.CallbackRepository;
 import com.lsp.web.repository.JourneyLogRepository;
 import com.lsp.web.repository.LoggerRepository;
@@ -59,6 +61,8 @@ public class SearchService {
 	private JourneyLogRepository journeyLogRepository;
 	@Autowired
 	private UserInfoRepository userInfoRepository;
+	@Autowired
+	private ApplyFailRepository applyFailRepository;
 	
 	@Autowired
 	private TxnLogService txnLogService;
@@ -241,10 +245,25 @@ public class SearchService {
 			// FormDataDTO
 			ONDCFormDataDTO ondcFormDataDTO = new ONDCFormDataDTO();
 
-			ondcFormDataDTO.setPanName(userInfo.getFirstName() + " " + userInfo.getLastName());
+//			ondcFormDataDTO.setPanName(userInfo.getFirstName() + " " + userInfo.getLastName());
+//			ondcFormDataDTO.setPanName(userInfo.getFirstName() + " "+userInfo.getFatherName()+" " + userInfo.getLastName());
+			ondcFormDataDTO.setPanName(userInfo.getPanName());
+			
+			String panName = userInfo.getPanName();
 
-			ondcFormDataDTO.setFirstName(userInfo.getFirstName());
-			ondcFormDataDTO.setLastName(userInfo.getLastName());
+//			ondcFormDataDTO.setFirstName(userInfo.getFirstName());
+//			ondcFormDataDTO.setLastName(userInfo.getLastName());
+			
+			if (panName != null && !panName.trim().isEmpty()) {
+			    String[] parts = panName.trim().split("\\s+", 2); // split into 2 parts
+			    String firstNameFromPan = parts[0]; // first word
+			    String lastNameFromPan = parts.length > 1 ? parts[1] : ""; // rest of the name if available
+
+			    ondcFormDataDTO.setFirstName(firstNameFromPan);
+			    ondcFormDataDTO.setLastName(lastNameFromPan);
+			    ondcFormDataDTO.setPanName(panName);
+			}
+			
 //            ondcFormDataDTO.setDob(userInfo.getDob());
 			ondcFormDataDTO.setDob(dobFormatted);
 
@@ -267,7 +286,8 @@ public class SearchService {
 																		// Business
 			}
 
-			ondcFormDataDTO.setEndUse("consumerDurablePurchase"); // if static
+//			ondcFormDataDTO.setEndUse("consumerDurablePurchase"); // if static
+			ondcFormDataDTO.setEndUse("other");
 //            ondcFormDataDTO.setIncome(userInfo.getMonthlyIncome() != null ? userInfo.getMonthlyIncome().toString() : null);
 
 			int inc = 0;
@@ -361,6 +381,57 @@ public class SearchService {
 //        return ResponseEntity.ok("ACK");
 		return ResponseEntity.ok(Map.of("message", Map.of("ack", Map.of("status", "ACK"))));
 
+	}
+	
+public void writeFormLogs(String mobileNumber, String request, String response, String gatewayUrl, String transactionId, String formSubmissionStatus, String productName) {
+		
+		// Load the userInfo to save the userInfo id into journeyLog
+					UserInfo userInfo;
+					Optional<UserInfo> optionalUserInfo = userInfoRepository.findByMobileNumber(mobileNumber);
+					if (optionalUserInfo.isEmpty()) {
+						throw new UserInfoNotFoundException("UserInfo not found with mobileNumber : " + mobileNumber);
+
+					}
+					userInfo = optionalUserInfo.get();
+
+					// logic to save the journey log
+					JourneyLog journeyLog = new JourneyLog();
+					journeyLog.setPlatformId("O");
+					journeyLog.setRequestId(gatewayUrl);
+					journeyLog.setStage(1);
+					journeyLog.setUId(transactionId);
+					journeyLog.setUser(userInfo);
+					journeyLogRepository.save(journeyLog);
+
+					// here we will save this api call in logger
+					Logger logger = new Logger();
+					logger.setJourneyLog(journeyLog);
+//		            logger.setUrl(gatewayUrl);// this url doesnt refers the value of api url it holds the url if we get from response of that api
+					logger.setRequestPayload(request);
+					logger.setResponsePayload(response);
+
+					loggerRepository.save(logger);
+					
+					if(formSubmissionStatus.equalsIgnoreCase("rejected")) {
+						ApplyFail applyFail;
+						
+						
+						Optional<ApplyFail> optionalApplyFail = applyFailRepository.findByUserAndProductName(userInfo, productName);
+						if(optionalApplyFail.isEmpty()) {
+							applyFail = new ApplyFail();
+							applyFail.setJourneyLog(journeyLog);
+							applyFail.setProductName(productName);
+							applyFail.setUser(userInfo);
+							applyFail.setUserMobileNumber(mobileNumber);
+							
+						}else {
+							applyFail = optionalApplyFail.get();
+							applyFail.setJourneyLog(journeyLog);
+						}
+						
+						applyFailRepository.save(applyFail);
+					}
+		
 	}
 
 }
