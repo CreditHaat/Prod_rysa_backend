@@ -1417,6 +1417,7 @@ public class UserInfoService {
 
 			            if (optionalUser.isPresent()) {
 			                UserInfo user = optionalUser.get();
+			                user.setCreditProfile("1000");
 //			                user.setFinalScore((int)finalScore);  // ✅ Make sure this setter exists in your UserInfo entity
 			                userInfoRepository.save(user);
 			            }
@@ -1464,40 +1465,53 @@ public class UserInfoService {
 		                return data;
 
 		            }
-		            
- 
 
 		            // Extract score
 		            JSONObject scoreJson = inProfileResponse.optJSONObject("SCORE");
-		            String pan = inProfileResponse
+		         // ===== Step 1: Try from Current_Applicant_Details first =====
+		            JSONObject applicantDetails = inProfileResponse
 		                    .optJSONObject("Current_Application")
 		                    .optJSONObject("Current_Application_Details")
-		                    .optJSONObject("Current_Applicant_Details")
-		                    .optString("IncomeTaxPan", "");
+		                    .optJSONObject("Current_Applicant_Details");
 
-		                String dob = inProfileResponse
+		            JSONObject applicantAddress = inProfileResponse
 		                    .optJSONObject("Current_Application")
 		                    .optJSONObject("Current_Application_Details")
-		                    .optJSONObject("Current_Applicant_Details")
-		                    .optString("Date_Of_Birth_Applicant", "");
+		                    .optJSONObject("Current_Applicant_Address_Details");
 
-		                String email = inProfileResponse
-		                    .optJSONObject("Current_Application")
-		                    .optJSONObject("Current_Application_Details")
-		                    .optJSONObject("Current_Applicant_Details")
-		                    .optString("EMailId", "");
+		            String pan     = applicantDetails != null ? applicantDetails.optString("IncomeTaxPan", "") : "";
+		            String dob     = applicantDetails != null ? applicantDetails.optString("Date_Of_Birth_Applicant", "") : "";
+		            String email   = applicantDetails != null ? applicantDetails.optString("EMailId", "") : "";
+		            String gender  = applicantDetails != null ? applicantDetails.optString("Gender_Code", "") : "";
+		            String pincode = applicantAddress != null ? applicantAddress.optString("PINCode", "") : "";
 
-		                String gender = inProfileResponse
-		                    .optJSONObject("Current_Application")
-		                    .optJSONObject("Current_Application_Details")
-		                    .optJSONObject("Current_Applicant_Details")
-		                    .optString("Gender_Code", "");
+		            // ===== Step 2: Fallback to CAIS_Account_DETAILS if missing =====
+		            if (pan.isEmpty() || dob.isEmpty() || email.isEmpty() || gender.isEmpty() || pincode.isEmpty()) {
+		                JSONObject caisAccount = inProfileResponse.optJSONObject("CAIS_Account");
+		                if (caisAccount != null) {
+		                    JSONArray accountDetails = caisAccount.optJSONArray("CAIS_Account_DETAILS");
+		                    if (accountDetails != null && accountDetails.length() > 0) {
+		                        JSONObject firstAcc = accountDetails.optJSONObject(0);
+		                        if (firstAcc != null) {
+		                            JSONObject holderDetails = firstAcc.optJSONObject("CAIS_Holder_Details");
+		                            if (holderDetails != null) {
+		                                if (pan.isEmpty())    pan = holderDetails.optString("Income_TAX_PAN", "");
+		                                if (dob.isEmpty())    dob = holderDetails.optString("Date_of_birth", "");
+		                                if (email.isEmpty())  email = holderDetails.optString("EMailId", "");
+		                                if (gender.isEmpty()) gender = holderDetails.optString("Gender_Code", "");
+		                            }
 
-		                String pincode = inProfileResponse
-		                    .optJSONObject("Current_Application")
-		                    .optJSONObject("Current_Application_Details")
-		                    .optJSONObject("Current_Applicant_Address_Details")
-		                    .optString("PINCode", "");
+		                            JSONArray addressArray = firstAcc.optJSONArray("CAIS_Holder_Address_Details");
+		                            if (addressArray != null && addressArray.length() > 0) {
+		                                JSONObject firstAddress = addressArray.optJSONObject(0);
+		                                if (pincode.isEmpty()) {
+		                                    pincode = firstAddress.optString("ZIP_Postal_Code_non_normalized", "");
+		                                }
+		                            }
+		                        }
+		                    }
+		                }
+		            }
 		            String score = scoreJson != null ? scoreJson.optString("BureauScore", null) : null;
 		            
 //================================================this code is used to save  bereauresponse in table====== 

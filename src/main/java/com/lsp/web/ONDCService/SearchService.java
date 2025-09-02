@@ -306,13 +306,13 @@ public class SearchService {
 			
 			//			ondcFormDataDTO.setIncome("100000");
 			ondcFormDataDTO.setCompanyName(userInfo.getCompanyName());
-			ondcFormDataDTO.setUdyamNumber("UDYAM-ABC123"); // static or from another source
+			ondcFormDataDTO.setUdyamNumber(null); // static or from another source
 			ondcFormDataDTO.setAddressL1(userInfo.getAddress());
 			ondcFormDataDTO.setAddressL2(""); // Optional field
 //			ondcFormDataDTO.setCity("Pune"); // Static or derive if available
 //			ondcFormDataDTO.setState("Maharashtra"); // Same
-			ondcFormDataDTO.setCity("NA");
-			ondcFormDataDTO.setState("NA");
+			ondcFormDataDTO.setCity(null);
+			ondcFormDataDTO.setState(null);
 			ondcFormDataDTO.setPincode(
 					userInfo.getResidentialPincode() != null ? userInfo.getResidentialPincode().toString() : null);
 			ondcFormDataDTO.setAa_id(userInfo.getMobileNumber() + "@finvu");
