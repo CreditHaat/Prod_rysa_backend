@@ -182,11 +182,15 @@ public class ProductService {
     			
     			if(score==1000) {
     				//return null;
+//    				return true;
+    				return false;
     			}
     			else if(score<product.getCredit_profile()) {
     			// return null;
+    				return false;
     			 }else{
-    				return false; 
+//    				return false; 
+    				 return true;
     			 }
             }
         } catch (Exception ex) {

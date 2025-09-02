@@ -1352,6 +1352,9 @@ public class UserInfoService {
 //
 //		    }
 	        
+	        
+	        
+	        
 	        public Map<?,?> verifyOtp(JSONObject input) {
 		        try {
 		            // Prepare external API call
@@ -1586,361 +1589,6 @@ public class UserInfoService {
 		                userInfoRepository.save(user);
 		            }
 		            
-
-
-//=======================================================================================================
-
-		            // Extract account info
-		            JSONObject caisAccountResponse = inProfileResponse.optJSONObject("CAIS_Account");
-		            if (caisAccountResponse == null) throw new Exception("Missing CAIS_Account");
-
-		            Object caisAccountDetailsObject = caisAccountResponse.opt("CAIS_Account_DETAILS");
-
-		            JSONArray accountDetails = caisAccountDetailsObject instanceof JSONArray
-		                    ? (JSONArray) caisAccountDetailsObject
-		                    : new JSONArray().put(caisAccountDetailsObject);
-		            
-		            
-		            
-//==================================== Repayment Score Logic Starts ==================================================================
-		            ObjectMapper mapper = new ObjectMapper();
-		            List<Map<String, Object>> caisAccounts = mapper.readValue(
-		                accountDetails.toString(), new TypeReference<List<Map<String, Object>>>() {}
-		            );
-
-		            int totalMonths = 0;
-		            int delayedMonths = 0;
-
-		            for (Map<String, Object> account : caisAccounts) {
-		                @SuppressWarnings("unchecked")
-		                List<Map<String, Object>> history = (List<Map<String, Object>>) account.get("CAIS_Account_History");
-		                if (history == null) continue;
-
-		                for (Map<String, Object> month : history) {
-		                    Object dpdObj = month.get("Days_Past_Due");
-		                    if (dpdObj != null && !dpdObj.toString().trim().isEmpty()) {
-		                        try {
-		                            int dpd = Integer.parseInt(dpdObj.toString().trim());
-		                            totalMonths++;
-		                            if (dpd > 0) delayedMonths++;
-		                        } catch (NumberFormatException e) {
-		                            // Skip invalid values like "?"
-		                        }
-		                    }
-		                }
-		            }
-
-		            String repaymentScoreStr = "NA";
-		            if (totalMonths > 0) {
-		                int repaymentScore = (int) Math.round(((double)(totalMonths - delayedMonths) / totalMonths) * 100);
-		                repaymentScoreStr = String.valueOf(repaymentScore);
-		            }
-		            
-		            
-		            
-		            Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(mobileNumber);
-
-		            if (optionalUser.isPresent()) {
-		                UserInfo user = optionalUser.get();
-
-		                // ✅ Set repayment score
-//		                user.setRepaymentScore(repaymentScoreStr);
-
-		                // ✅ Save updated user
-		                userInfoRepository.save(user);
-		            }
-
-		            // ✅ Repayment Score Logic Ends
-
-		            
-//================================ Get report date for DPD calculations ================================================================================
-		            
-		            
-		            Integer reportDate = inProfileResponse.optJSONObject("Header").optInt("ReportDate");
-		            LocalDate buro_report_fetch_date = LocalDate.parse(String.format("%08d", reportDate), DateTimeFormatter.BASIC_ISO_DATE);
-		            LocalDate buro_report_minus_one_month = buro_report_fetch_date.minusMonths(1);
-
-
-		            
-		            int maxVintageInMonths = calculateMaxVintageInMonths(accountDetails);
-		            double totalAmountPastDue = 0;
-		            
-
-		            int suitPoints = calculateSuitFiledWrittenOffPoints(json);
-		           
-
-		            // Initialize DPD counters for different time periods
-		            Map<String, Integer> dpdCounts = new HashMap<>();
-		            dpdCounts.put("last_3_months_dpd_count", 0);
-		            dpdCounts.put("last_6_months_dpd_count", 0);
-		            dpdCounts.put("last_12_months_dpd_count", 0);
-		            dpdCounts.put("last_24_months_dpd_count", 0);
-		            dpdCounts.put("last_36_months_dpd_count", 0);
-
-		            // Initialize max DPD tracking
-		            Map<String, Integer> maxDpd = new HashMap<>();
-		            maxDpd.put("max_dpd_3_months", 0);
-		            maxDpd.put("max_dpd_6_months", 0);
-		            maxDpd.put("max_dpd_12_months", 0);
-		            maxDpd.put("max_dpd_24_months", 0);
-		            maxDpd.put("max_dpd_36_months", 0);
-
-		            int totalUnsecuredLoans = 0;
-		            int unsecuredLoansLast30 = 0;
-		            int unsecuredLoansLast90 = 0;
-		            int lowAmountLoans30 = 0;
-		            int lowAmountLoans90 = 0;
-		            int active_account_count = 0;
-		            List<String> unsecuredTypes = Arrays.asList("61", "69", "71", "24", "5");
-		            
-			         // Replace the existing credit utilization logic in your verifyOtp method with this corrected version
-			         // Initialize totals
-			         double totalCCBalance = 0.0;
-			         double totalCCLimit = 0.0;
-			         double totalBalanceAll = 0.0;
-			         double totalLimitAll = 0.0;
-			         
-			         double totalLoanOriginalAmount = 0.0;
-			         double totalLoanCurrentBalance = 0.0;
-
-
-
-		            for (int i = 0; i < accountDetails.length(); i++) {
-		                JSONObject account = accountDetails.getJSONObject(i);
-		                Object statusValue = account.opt("Account_Status");
-		                if (accountStatusChecker(statusValue)) {
-		                    active_account_count++;
-		                }
-		                
-		                // ✅ Unsecured loan logic
-		                String accountType = account.optString("Account_Type");
-		                String dateClosed = account.optString("Date_Closed");
-		                String openDateStr = account.optString("Date_Opened");
-		                double origLoanAmt = account.optDouble("Highest_Credit_or_Original_Loan_Amount", 0);
-		                double creditLimit = account.optDouble("Credit_Limit_Amount", 0.0);
-		                double balance = account.optDouble("Current_Balance", 0.0);
-		                // For Credit Cards (Account_Type = "10")
-		                if ("10".equals(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
-		                    // Only count active/open credit cards
-		                    totalCCBalance += balance;
-		                    totalCCLimit += creditLimit;
-		                    System.out.println("CC Account - Balance: " + balance + ", Limit: " + creditLimit);
-		                }
-		                // For all accounts with credit limits (for overall utilization)
-		                if (creditLimit > 0 && (dateClosed == null || dateClosed.isEmpty())) {
-		                    totalBalanceAll += balance;
-		                    totalLimitAll += creditLimit;
-		                }
-		                
-		             // ✅ Loan Utilization Score Logic (excluding Credit Cards)
-		                if (!"10".equals(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
-		                	double loanOrigAmount = account.optDouble("Highest_Credit_or_Original_Loan_Amount", 0);
-		                    double loanBalance = account.optDouble("Current_Balance", 0);
-		                    totalLoanOriginalAmount += loanOrigAmount;
-		                    totalLoanCurrentBalance += loanBalance;
-		                }
-
-		                
-		                // Check if it's an unsecured loan that's still open
-		                if (unsecuredTypes.contains(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
-		                    totalUnsecuredLoans++;
-
-		                    if (openDateStr != null && !openDateStr.isEmpty()) {
-		                        try {
-		                            LocalDate openDate = LocalDate.parse(openDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-		                            long daysBetween = ChronoUnit.DAYS.between(openDate, buro_report_fetch_date);
-
-		                            if (daysBetween <= 30) {
-		                                unsecuredLoansLast30++;
-		                                if (origLoanAmt < 10000) {
-		                                    lowAmountLoans30++;
-		                                }
-		                            }
-		                            if (daysBetween <= 90) {
-		                                unsecuredLoansLast90++;
-		                                if (origLoanAmt < 10000) {
-		                                    lowAmountLoans90++;
-		                                }
-		                            }
-		                        } catch (Exception e) {
-		                            System.err.println("Error parsing date: " + openDateStr + " - " + e.getMessage());
-		                        }
-		                    }
-		                }
-			             // For Credit Cards (Account_Type = "10")
-			             if ("10".equals(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
-			                 // Only count active/open credit cards
-			                 totalCCBalance += balance;
-			                 totalCCLimit += creditLimit;
-			                 System.out.println("CC Account - Balance: " + balance + ", Limit: " + creditLimit);
-			             }
-
-			             // For all accounts with credit limits (for overall utilization)
-			             if (creditLimit > 0 && (dateClosed == null || dateClosed.isEmpty())) {
-			                 totalBalanceAll += balance;
-			                 totalLimitAll += creditLimit;
-			             }
-		             
-		                double amountPastDue = 0;
-		                try {
-		                    amountPastDue = account.optDouble("Amount_Past_Due", 0);
-		                } catch (Exception e) {
-		                    // ignore
-		                }
-		                totalAmountPastDue += amountPastDue;
-		                
-		                // Process DPD history for this account
-		                Object historyValue = account.opt("CAIS_Account_History");
-		                if (historyValue != null) {
-		                    Map<String, Integer> accountDpdData = processAccountDPDHistory(historyValue, buro_report_minus_one_month);
-		                    
-		                    // Add account DPD data to overall counts
-		                    dpdCounts.put("last_3_months_dpd_count", 
-		                        dpdCounts.get("last_3_months_dpd_count") + accountDpdData.get("dpd_3_months"));
-		                    dpdCounts.put("last_6_months_dpd_count", 
-		                        dpdCounts.get("last_6_months_dpd_count") + accountDpdData.get("dpd_6_months"));
-		                    dpdCounts.put("last_12_months_dpd_count", 
-		                        dpdCounts.get("last_12_months_dpd_count") + accountDpdData.get("dpd_12_months"));
-		                    dpdCounts.put("last_24_months_dpd_count", 
-		                        dpdCounts.get("last_24_months_dpd_count") + accountDpdData.get("dpd_24_months"));
-		                    dpdCounts.put("last_36_months_dpd_count", 
-		                        dpdCounts.get("last_36_months_dpd_count") + accountDpdData.get("dpd_36_months"));
-
-		                    // Update max DPD values
-		                    maxDpd.put("max_dpd_3_months", 
-		                        Math.max(maxDpd.get("max_dpd_3_months"), accountDpdData.get("max_dpd_3_months")));
-		                    maxDpd.put("max_dpd_6_months", 
-		                        Math.max(maxDpd.get("max_dpd_6_months"), accountDpdData.get("max_dpd_6_months")));
-		                    maxDpd.put("max_dpd_12_months", 
-		                        Math.max(maxDpd.get("max_dpd_12_months"), accountDpdData.get("max_dpd_12_months")));
-		                    maxDpd.put("max_dpd_24_months", 
-		                        Math.max(maxDpd.get("max_dpd_24_months"), accountDpdData.get("max_dpd_24_months")));
-		                    maxDpd.put("max_dpd_36_months", 
-		                        Math.max(maxDpd.get("max_dpd_36_months"), accountDpdData.get("max_dpd_36_months")));
-		                }
-		                
-		                
-
-		                // You can log or use unsecuredLoanCount here
-
-		            
-		        }
-		            // Scoring logic (individual category scores)
-		            int unsecuredScoreOverall = 0;
-		            int unsecuredScoreLast30 = 0;
-		            int lowAmt30Score = 0;
-		            int lowAmt90Score = 0;
-
-		            if (totalUnsecuredLoans == 0) unsecuredScoreOverall = 20;
-		            else if (totalUnsecuredLoans <= 3) unsecuredScoreOverall = 15;
-
-		            if (unsecuredLoansLast30 == 0) unsecuredScoreLast30 = 20;
-		            else if (unsecuredLoansLast30 == 1) unsecuredScoreLast30 = 10;
-
-		            if (lowAmountLoans30 == 0) lowAmt30Score = 20;
-		            else if (lowAmountLoans30 <= 2) lowAmt30Score = 10;
-		            else lowAmt30Score = 0;
-
-		            if (lowAmountLoans90 == 0) lowAmt90Score = 20;
-		            else if (lowAmountLoans90 <= 3) lowAmt90Score = 5;
-		            else lowAmt90Score = 0;
-
-
-		         //======================Calculate CC Utilization Score==============================
-		         int ccUtilScore = 0;
-		         double ccUtilPercent = 0.0;
-		         if (totalCCLimit > 0) {
-		             ccUtilPercent = (totalCCBalance / totalCCLimit) * 100;
-
-		             if (ccUtilPercent < 50) {
-		                 ccUtilScore = 50;
-		             } else if (ccUtilPercent >= 50 && ccUtilPercent <= 75) {
-		                 ccUtilScore = 20;
-		             } else if (ccUtilPercent > 75 && ccUtilPercent <= 90) {
-		                 ccUtilScore = 10;
-		             } else if (ccUtilPercent > 90) {
-		                 ccUtilScore = 0;
-		             }
-		         } else {
-		             // No credit cards or no credit limit data
-		             ccUtilScore = 0; // or you might want to set this to a default value
-		             ccUtilPercent = 0.0;
-		         }
-	
-		         
-//=============================Calculate Overall Credit Utilization Score=====================
-		         int creditUtilScore = 0;
-		         double overallUtilPercent = 0.0;
-		         if (totalLimitAll > 0) {
-		             overallUtilPercent = (totalBalanceAll / totalLimitAll) * 100;
-
-		             if (overallUtilPercent < 30) {
-		                 creditUtilScore = 5;
-		             } else if (overallUtilPercent >= 30 && overallUtilPercent <= 50) {
-		                 creditUtilScore = 3;
-		             } else if (overallUtilPercent > 50) {
-		                 creditUtilScore = 1;
-		             }
-		         } else {
-		             // No accounts with credit limits
-		             creditUtilScore = 0;
-		             overallUtilPercent = 0.0;
-		         }
-//==========================================================================================================		         
-		      
-// ===================================== Calculate Loan Utilization Ratio and Score=========================
-		         int loanUtilScore = 0;
-		         double loanUtilRatio = 0.0;
-
-		         if (totalLoanOriginalAmount > 0) {
-		        	 loanUtilRatio = (totalLoanCurrentBalance / totalLoanOriginalAmount) * 100;
-
-		             if (loanUtilRatio < 30) {  //---------------0.3 = 30%
-		                 loanUtilScore = 5;
-		             } else if (loanUtilRatio <= 50) { //---------------0.5 = 50%
-		                 loanUtilScore = 3;
-		             } else {
-		                 loanUtilScore = 1;
-		             }
-		         }
-
-//=========================================================================================================
-		            
-		         int activeAccountPoints = calculateActiveAccountPoints(active_account_count);
-
-		            // Calculate DPD-based points
-		            Map<String, Integer> dpdPoints = calculateDPDPoints(dpdCounts, maxDpd);
-		            //Map<String, Object> unsecuredMetrics = new UserInfoService().calculateMetrics(accountDetails, reportDateString);
-
-		            int overduePoints = calculateOverduePoints(totalAmountPastDue);
-		            int scorePoints = calculateScorePoints(score);
-		            int vintagePoints = calculateVintagePoints(maxVintageInMonths);		    
-		            
-		        //    JSONObject inProfileResponse = input.optJSONObject("INProfileResponse");
-		            JSONObject totalCAPSSummary = inProfileResponse != null ? inProfileResponse.optJSONObject("TotalCAPS_Summary") : null;
-
-		            int totalCAPSLast30Days = totalCAPSSummary != null ? totalCAPSSummary.optInt("TotalCAPSLast30Days", 0) : 0;
-		            int totalCAPSLast90Days = totalCAPSSummary != null ? totalCAPSSummary.optInt("TotalCAPSLast90Days", 0) : 0;
-
-		            int points30 = getPointsFor30Days(totalCAPSLast30Days);
-		            int points90 = getPointsFor90Days(totalCAPSLast90Days);
-
-
-
-	
-		            int dpd3MaxDaysPoints = dpdPoints.get("dpd_3_months_max_days_points");
-		            int dpd6MaxDaysPoints = dpdPoints.get("dpd_6_months_max_days_points");
-		            int dpd12MaxDaysPoints = dpdPoints.get("dpd_12_months_max_days_points");
-		            int dpd24MaxDaysPoints = dpdPoints.get("dpd_24_months_max_days_points");
-		            int dpd36MaxDaysPoints = dpdPoints.get("dpd_36_months_max_days_points");
-		            int dpd3CountPoints = dpdPoints.get("dpd_3_months_count_points");
-		            int dpd6CountPoints = dpdPoints.get("dpd_6_months_count_points");
-		            int dpd12CountPoints = dpdPoints.get("dpd_12_months_count_points");
-		            int dpd36CountPoints = dpdPoints.get("dpd_36_months_count_points");
-		            
-
-
-		            // Prepare response
 		            Map<String, Object> data = new HashMap<>();
 		            data.put("score", score);
 		            data.put("pan", pan);
@@ -1948,99 +1596,7 @@ public class UserInfoService {
 		            data.put("email", email);
 		            data.put("gender", gender);
 		            data.put("pincode", pincode);
-		            data.put("score_points", scorePoints);
-		            data.put("max_vintage_in_months", maxVintageInMonths);
-		            data.put("vintage_points", vintagePoints);
-		            data.put("active_account_count", active_account_count);
-		            data.put("active_account_points", activeAccountPoints);
-		            data.put("total_amount_past_due", totalAmountPastDue);
-		            data.put("overdue_points", overduePoints);	
-		            data.put("suitfiled_writtenoff_points", suitPoints);
-
-		            data.put("Points_CAPS_30_Days", points30);
-		            data.put("Points_CAPS_90_Days", points90);
-
 		            
-		            // Add individual DPD points in your requested format
-		            data.put("dpd_3_max_days_points", dpd3MaxDaysPoints);
-		            data.put("dpd_6_max_days_points", dpd6MaxDaysPoints);
-		            data.put("dpd_12_max_days_points", dpd12MaxDaysPoints);
-		            data.put("dpd_24_max_days_points", dpd24MaxDaysPoints);
-		            data.put("dpd_36_max_days_points", dpd36MaxDaysPoints);
-		            data.put("dpd_3_count_points", dpd3CountPoints);
-		            data.put("dpd_6_count_points", dpd6CountPoints);
-		            data.put("dpd_12_count_points", dpd12CountPoints);
-		            data.put("dpd_36_count_points", dpd36CountPoints);
-		            // Add DPD counts
-		            data.putAll(dpdCounts);
-		            
-		            // Add max DPD values
-		            data.putAll(maxDpd);
-		            
-		            // Add individual DPD points as requested
-		            data.put("dpd_3m_points", dpdPoints.get("dpd_3_months_max_days_points"));
-		            data.put("dpd_6m_points", dpdPoints.get("dpd_6_months_max_days_points"));
-		            data.put("dpd_12m_points", dpdPoints.get("dpd_12_months_max_days_points"));
-		            data.put("dpd_24m_points", dpdPoints.get("dpd_24_months_max_days_points"));
-		            data.put("dpd_36m_points", dpdPoints.get("dpd_36_months_max_days_points"));
-		            data.put("dpd_count_3m_points", dpdPoints.get("dpd_3_months_count_points"));
-		            data.put("dpd_count_6m_points", dpdPoints.get("dpd_6_months_count_points"));
-		            data.put("dpd_count_12m_points", dpdPoints.get("dpd_12_months_count_points"));
-		            data.put("dpd_count_36m_points", dpdPoints.get("dpd_36_months_count_points"));
-		            data.put("suitfiled_writtenoff_points", suitPoints);	
-		            
-		            // Add total DPD score
-		            data.put("total_dpd_score", dpdPoints.get("total_dpd_score"));
-		            
-		            // Add overall DPD summary
-		            data.put("dpd_summary", createDPDSummary(dpdCounts, maxDpd, dpdPoints));
-		            
-		   		 // ✅ Store values in your response map
-		            data.put("UnsecuredLoanScore", unsecuredScoreOverall);
-		            data.put("TotalUnsecuredLoans", totalUnsecuredLoans);
-		            data.put("UnsecuredLoansLast30Days", unsecuredScoreLast30);
-		            data.put("UnsecuredLoansLast90Days", unsecuredLoansLast90);//just counted not to use 
-		            data.put("LowAmountLoans30Days", lowAmt30Score);
-		            data.put("LowAmountLoans90Days", lowAmt90Score);
-	
-		            data.put("loanUtilRatio", String.valueOf(loanUtilRatio));
-		            data.put("loanUtilScore", loanUtilScore);
-
-		            data.put("CC_Utilization_Score", String.valueOf(ccUtilScore));//all  creditcard utilization ratio
-		            data.put("Credit_Utilization_Score", creditUtilScore);
-		            data.put("Overall_Credit_Utilization_Percent",overallUtilPercent);
-		            data.put("CC_Utilization_Percent",ccUtilPercent); // Round to 2 decimal places
-
-		            //data.put("CC_Utilization_Percent", Math.round(ccUtilPercent * 100.0) / 100.0); // Round to 2 decimal places
-		           // data.put("Overall_Credit_Utilization_Percent", Math.round(overallUtilPercent * 100.0) / 100.0);
-		            data.put("Total_CC_Balance", totalCCBalance);
-		            data.put("Total_CC_Limit", totalCCLimit);
-		            data.put("Total_Overall_Balance", totalBalanceAll);
-		            data.put("Total_Overall_Limit", totalLimitAll);
-		            
-		            //data.put("Loan_Utilization_Score", loanUtilScore);//total approved amount and current balance ratio for all active  loans 
-		            //data.put("Loan_Utilization_Ratio", Math.round(loanUtilRatio * 100.0) / 100.0); // in %, rounded to 2 decimals	            
-		            data.put("Total_Loan_Original_Amount", totalLoanOriginalAmount);
-		            data.put("Total_Loan_Current_Balance", totalLoanCurrentBalance);
-		            data.put("repaymentScore", repaymentScoreStr);
-		            double lcScore;
-		           // lcScore = (loanUtilRatio + ccUtilPercent)/2;
-		            
-		           lcScore = ((totalCCBalance+totalLoanCurrentBalance)/(totalCCLimit+totalLoanOriginalAmount))*100;
-		        // ✅ Round to 1 decimal places (truncate, not round up)
-		           lcScore = Math.round(lcScore * 10.0) / 10.0;
-		           data.put("Loan_creditCard_utilization_percentage",lcScore);
-		            long finalScore;
-		            finalScore = scorePoints+vintagePoints+activeAccountPoints+overduePoints+suitPoints+dpd3MaxDaysPoints+dpd6MaxDaysPoints+dpd12MaxDaysPoints+dpd24MaxDaysPoints+dpd36MaxDaysPoints+dpd3CountPoints+dpd6CountPoints+dpd12CountPoints+dpd36CountPoints
-		            +points90+points30+unsecuredScoreOverall+unsecuredScoreLast30+lowAmt30Score+lowAmt90Score+ccUtilScore+loanUtilScore;
-		            data.put("finalScore", finalScore);
-		            if (optionalUser.isPresent()) {
-		                UserInfo user = optionalUser.get();
-//		                user.setFinalScore((int)finalScore);  // ✅ Make sure this setter exists in your UserInfo entity
-		                userInfoRepository.save(user);
-		            }
-		            
-		            //  data.put("unsecured_loan_purpose_code", unsecuredLoanPurpose);  // <==stored unsecuredloan count
 		            data.put("code", 1);//code 1 is for otp verified succesfully
 		            data.put("message", "otp verified succesfully");
 		            
@@ -2058,6 +1614,478 @@ public class UserInfoService {
 
 		        }
 		    }
+
+
+//=======================================================================================================
+//
+//		            // Extract account info
+//		            JSONObject caisAccountResponse = inProfileResponse.optJSONObject("CAIS_Account");
+//		            if (caisAccountResponse == null) throw new Exception("Missing CAIS_Account");
+//
+//		            Object caisAccountDetailsObject = caisAccountResponse.opt("CAIS_Account_DETAILS");
+//
+//		            JSONArray accountDetails = caisAccountDetailsObject instanceof JSONArray
+//		                    ? (JSONArray) caisAccountDetailsObject
+//		                    : new JSONArray().put(caisAccountDetailsObject);
+//		            
+//		            
+//		            
+////==================================== Repayment Score Logic Starts ==================================================================
+//		            ObjectMapper mapper = new ObjectMapper();
+//		            List<Map<String, Object>> caisAccounts = mapper.readValue(
+//		                accountDetails.toString(), new TypeReference<List<Map<String, Object>>>() {}
+//		            );
+//
+//		            int totalMonths = 0;
+//		            int delayedMonths = 0;
+//
+//		            for (Map<String, Object> account : caisAccounts) {
+//		                @SuppressWarnings("unchecked")
+//		                List<Map<String, Object>> history = (List<Map<String, Object>>) account.get("CAIS_Account_History");
+//		                if (history == null) continue;
+//
+//		                for (Map<String, Object> month : history) {
+//		                    Object dpdObj = month.get("Days_Past_Due");
+//		                    if (dpdObj != null && !dpdObj.toString().trim().isEmpty()) {
+//		                        try {
+//		                            int dpd = Integer.parseInt(dpdObj.toString().trim());
+//		                            totalMonths++;
+//		                            if (dpd > 0) delayedMonths++;
+//		                        } catch (NumberFormatException e) {
+//		                            // Skip invalid values like "?"
+//		                        }
+//		                    }
+//		                }
+//		            }
+//
+//		            String repaymentScoreStr = "NA";
+//		            if (totalMonths > 0) {
+//		                int repaymentScore = (int) Math.round(((double)(totalMonths - delayedMonths) / totalMonths) * 100);
+//		                repaymentScoreStr = String.valueOf(repaymentScore);
+//		            }
+//		            
+//		            
+//		            
+//		            Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(mobileNumber);
+//
+//		            if (optionalUser.isPresent()) {
+//		                UserInfo user = optionalUser.get();
+//
+//		                // ✅ Set repayment score
+////		                user.setRepaymentScore(repaymentScoreStr);
+//
+//		                // ✅ Save updated user
+//		                userInfoRepository.save(user);
+//		            }
+//
+//		            // ✅ Repayment Score Logic Ends
+//
+//		            
+////================================ Get report date for DPD calculations ================================================================================
+//		            
+//		            
+//		            Integer reportDate = inProfileResponse.optJSONObject("Header").optInt("ReportDate");
+//		            LocalDate buro_report_fetch_date = LocalDate.parse(String.format("%08d", reportDate), DateTimeFormatter.BASIC_ISO_DATE);
+//		            LocalDate buro_report_minus_one_month = buro_report_fetch_date.minusMonths(1);
+//
+//
+//		            
+//		            int maxVintageInMonths = calculateMaxVintageInMonths(accountDetails);
+//		            double totalAmountPastDue = 0;
+//		            
+//
+//		            int suitPoints = calculateSuitFiledWrittenOffPoints(json);
+//		           
+//
+//		            // Initialize DPD counters for different time periods
+//		            Map<String, Integer> dpdCounts = new HashMap<>();
+//		            dpdCounts.put("last_3_months_dpd_count", 0);
+//		            dpdCounts.put("last_6_months_dpd_count", 0);
+//		            dpdCounts.put("last_12_months_dpd_count", 0);
+//		            dpdCounts.put("last_24_months_dpd_count", 0);
+//		            dpdCounts.put("last_36_months_dpd_count", 0);
+//
+//		            // Initialize max DPD tracking
+//		            Map<String, Integer> maxDpd = new HashMap<>();
+//		            maxDpd.put("max_dpd_3_months", 0);
+//		            maxDpd.put("max_dpd_6_months", 0);
+//		            maxDpd.put("max_dpd_12_months", 0);
+//		            maxDpd.put("max_dpd_24_months", 0);
+//		            maxDpd.put("max_dpd_36_months", 0);
+//
+//		            int totalUnsecuredLoans = 0;
+//		            int unsecuredLoansLast30 = 0;
+//		            int unsecuredLoansLast90 = 0;
+//		            int lowAmountLoans30 = 0;
+//		            int lowAmountLoans90 = 0;
+//		            int active_account_count = 0;
+//		            List<String> unsecuredTypes = Arrays.asList("61", "69", "71", "24", "5");
+//		            
+//			         // Replace the existing credit utilization logic in your verifyOtp method with this corrected version
+//			         // Initialize totals
+//			         double totalCCBalance = 0.0;
+//			         double totalCCLimit = 0.0;
+//			         double totalBalanceAll = 0.0;
+//			         double totalLimitAll = 0.0;
+//			         
+//			         double totalLoanOriginalAmount = 0.0;
+//			         double totalLoanCurrentBalance = 0.0;
+//
+//
+//
+//		            for (int i = 0; i < accountDetails.length(); i++) {
+//		                JSONObject account = accountDetails.getJSONObject(i);
+//		                Object statusValue = account.opt("Account_Status");
+//		                if (accountStatusChecker(statusValue)) {
+//		                    active_account_count++;
+//		                }
+//		                
+//		                // ✅ Unsecured loan logic
+//		                String accountType = account.optString("Account_Type");
+//		                String dateClosed = account.optString("Date_Closed");
+//		                String openDateStr = account.optString("Date_Opened");
+//		                double origLoanAmt = account.optDouble("Highest_Credit_or_Original_Loan_Amount", 0);
+//		                double creditLimit = account.optDouble("Credit_Limit_Amount", 0.0);
+//		                double balance = account.optDouble("Current_Balance", 0.0);
+//		                // For Credit Cards (Account_Type = "10")
+//		                if ("10".equals(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
+//		                    // Only count active/open credit cards
+//		                    totalCCBalance += balance;
+//		                    totalCCLimit += creditLimit;
+//		                    System.out.println("CC Account - Balance: " + balance + ", Limit: " + creditLimit);
+//		                }
+//		                // For all accounts with credit limits (for overall utilization)
+//		                if (creditLimit > 0 && (dateClosed == null || dateClosed.isEmpty())) {
+//		                    totalBalanceAll += balance;
+//		                    totalLimitAll += creditLimit;
+//		                }
+//		                
+//		             // ✅ Loan Utilization Score Logic (excluding Credit Cards)
+//		                if (!"10".equals(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
+//		                	double loanOrigAmount = account.optDouble("Highest_Credit_or_Original_Loan_Amount", 0);
+//		                    double loanBalance = account.optDouble("Current_Balance", 0);
+//		                    totalLoanOriginalAmount += loanOrigAmount;
+//		                    totalLoanCurrentBalance += loanBalance;
+//		                }
+//
+//		                
+//		                // Check if it's an unsecured loan that's still open
+//		                if (unsecuredTypes.contains(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
+//		                    totalUnsecuredLoans++;
+//
+//		                    if (openDateStr != null && !openDateStr.isEmpty()) {
+//		                        try {
+//		                            LocalDate openDate = LocalDate.parse(openDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
+//		                            long daysBetween = ChronoUnit.DAYS.between(openDate, buro_report_fetch_date);
+//
+//		                            if (daysBetween <= 30) {
+//		                                unsecuredLoansLast30++;
+//		                                if (origLoanAmt < 10000) {
+//		                                    lowAmountLoans30++;
+//		                                }
+//		                            }
+//		                            if (daysBetween <= 90) {
+//		                                unsecuredLoansLast90++;
+//		                                if (origLoanAmt < 10000) {
+//		                                    lowAmountLoans90++;
+//		                                }
+//		                            }
+//		                        } catch (Exception e) {
+//		                            System.err.println("Error parsing date: " + openDateStr + " - " + e.getMessage());
+//		                        }
+//		                    }
+//		                }
+//			             // For Credit Cards (Account_Type = "10")
+//			             if ("10".equals(accountType) && (dateClosed == null || dateClosed.isEmpty())) {
+//			                 // Only count active/open credit cards
+//			                 totalCCBalance += balance;
+//			                 totalCCLimit += creditLimit;
+//			                 System.out.println("CC Account - Balance: " + balance + ", Limit: " + creditLimit);
+//			             }
+//
+//			             // For all accounts with credit limits (for overall utilization)
+//			             if (creditLimit > 0 && (dateClosed == null || dateClosed.isEmpty())) {
+//			                 totalBalanceAll += balance;
+//			                 totalLimitAll += creditLimit;
+//			             }
+//		             
+//		                double amountPastDue = 0;
+//		                try {
+//		                    amountPastDue = account.optDouble("Amount_Past_Due", 0);
+//		                } catch (Exception e) {
+//		                    // ignore
+//		                }
+//		                totalAmountPastDue += amountPastDue;
+//		                
+//		                // Process DPD history for this account
+//		                Object historyValue = account.opt("CAIS_Account_History");
+//		                if (historyValue != null) {
+//		                    Map<String, Integer> accountDpdData = processAccountDPDHistory(historyValue, buro_report_minus_one_month);
+//		                    
+//		                    // Add account DPD data to overall counts
+//		                    dpdCounts.put("last_3_months_dpd_count", 
+//		                        dpdCounts.get("last_3_months_dpd_count") + accountDpdData.get("dpd_3_months"));
+//		                    dpdCounts.put("last_6_months_dpd_count", 
+//		                        dpdCounts.get("last_6_months_dpd_count") + accountDpdData.get("dpd_6_months"));
+//		                    dpdCounts.put("last_12_months_dpd_count", 
+//		                        dpdCounts.get("last_12_months_dpd_count") + accountDpdData.get("dpd_12_months"));
+//		                    dpdCounts.put("last_24_months_dpd_count", 
+//		                        dpdCounts.get("last_24_months_dpd_count") + accountDpdData.get("dpd_24_months"));
+//		                    dpdCounts.put("last_36_months_dpd_count", 
+//		                        dpdCounts.get("last_36_months_dpd_count") + accountDpdData.get("dpd_36_months"));
+//
+//		                    // Update max DPD values
+//		                    maxDpd.put("max_dpd_3_months", 
+//		                        Math.max(maxDpd.get("max_dpd_3_months"), accountDpdData.get("max_dpd_3_months")));
+//		                    maxDpd.put("max_dpd_6_months", 
+//		                        Math.max(maxDpd.get("max_dpd_6_months"), accountDpdData.get("max_dpd_6_months")));
+//		                    maxDpd.put("max_dpd_12_months", 
+//		                        Math.max(maxDpd.get("max_dpd_12_months"), accountDpdData.get("max_dpd_12_months")));
+//		                    maxDpd.put("max_dpd_24_months", 
+//		                        Math.max(maxDpd.get("max_dpd_24_months"), accountDpdData.get("max_dpd_24_months")));
+//		                    maxDpd.put("max_dpd_36_months", 
+//		                        Math.max(maxDpd.get("max_dpd_36_months"), accountDpdData.get("max_dpd_36_months")));
+//		                }
+//		                
+//		                
+
+		                // You can log or use unsecuredLoanCount here
+
+		            
+//		        }
+		            // Scoring logic (individual category scores)
+//		            int unsecuredScoreOverall = 0;
+//		            int unsecuredScoreLast30 = 0;
+//		            int lowAmt30Score = 0;
+//		            int lowAmt90Score = 0;
+//
+//		            if (totalUnsecuredLoans == 0) unsecuredScoreOverall = 20;
+//		            else if (totalUnsecuredLoans <= 3) unsecuredScoreOverall = 15;
+//
+//		            if (unsecuredLoansLast30 == 0) unsecuredScoreLast30 = 20;
+//		            else if (unsecuredLoansLast30 == 1) unsecuredScoreLast30 = 10;
+//
+//		            if (lowAmountLoans30 == 0) lowAmt30Score = 20;
+//		            else if (lowAmountLoans30 <= 2) lowAmt30Score = 10;
+//		            else lowAmt30Score = 0;
+//
+//		            if (lowAmountLoans90 == 0) lowAmt90Score = 20;
+//		            else if (lowAmountLoans90 <= 3) lowAmt90Score = 5;
+//		            else lowAmt90Score = 0;
+//
+
+//		         //======================Calculate CC Utilization Score==============================
+//		         int ccUtilScore = 0;
+//		         double ccUtilPercent = 0.0;
+//		         if (totalCCLimit > 0) {
+//		             ccUtilPercent = (totalCCBalance / totalCCLimit) * 100;
+//
+//		             if (ccUtilPercent < 50) {
+//		                 ccUtilScore = 50;
+//		             } else if (ccUtilPercent >= 50 && ccUtilPercent <= 75) {
+//		                 ccUtilScore = 20;
+//		             } else if (ccUtilPercent > 75 && ccUtilPercent <= 90) {
+//		                 ccUtilScore = 10;
+//		             } else if (ccUtilPercent > 90) {
+//		                 ccUtilScore = 0;
+//		             }
+//		         } else {
+//		             // No credit cards or no credit limit data
+//		             ccUtilScore = 0; // or you might want to set this to a default value
+//		             ccUtilPercent = 0.0;
+//		         }
+//	
+		         
+//=============================Calculate Overall Credit Utilization Score=====================
+//		         int creditUtilScore = 0;
+//		         double overallUtilPercent = 0.0;
+//		         if (totalLimitAll > 0) {
+//		             overallUtilPercent = (totalBalanceAll / totalLimitAll) * 100;
+//
+//		             if (overallUtilPercent < 30) {
+//		                 creditUtilScore = 5;
+//		             } else if (overallUtilPercent >= 30 && overallUtilPercent <= 50) {
+//		                 creditUtilScore = 3;
+//		             } else if (overallUtilPercent > 50) {
+//		                 creditUtilScore = 1;
+//		             }
+//		         } else {
+//		             // No accounts with credit limits
+//		             creditUtilScore = 0;
+//		             overallUtilPercent = 0.0;
+//		         }
+//==========================================================================================================		         
+		      
+// ===================================== Calculate Loan Utilization Ratio and Score=========================
+//		         int loanUtilScore = 0;
+//		         double loanUtilRatio = 0.0;
+//
+//		         if (totalLoanOriginalAmount > 0) {
+//		        	 loanUtilRatio = (totalLoanCurrentBalance / totalLoanOriginalAmount) * 100;
+//
+//		             if (loanUtilRatio < 30) {  //---------------0.3 = 30%
+//		                 loanUtilScore = 5;
+//		             } else if (loanUtilRatio <= 50) { //---------------0.5 = 50%
+//		                 loanUtilScore = 3;
+//		             } else {
+//		                 loanUtilScore = 1;
+//		             }
+//		         }
+
+//=========================================================================================================
+//		            
+//		         int activeAccountPoints = calculateActiveAccountPoints(active_account_count);
+//
+//		            // Calculate DPD-based points
+//		            Map<String, Integer> dpdPoints = calculateDPDPoints(dpdCounts, maxDpd);
+//		            //Map<String, Object> unsecuredMetrics = new UserInfoService().calculateMetrics(accountDetails, reportDateString);
+//
+//		            int overduePoints = calculateOverduePoints(totalAmountPastDue);
+//		            int scorePoints = calculateScorePoints(score);
+//		            int vintagePoints = calculateVintagePoints(maxVintageInMonths);		    
+//		            
+//		        //    JSONObject inProfileResponse = input.optJSONObject("INProfileResponse");
+//		            JSONObject totalCAPSSummary = inProfileResponse != null ? inProfileResponse.optJSONObject("TotalCAPS_Summary") : null;
+//
+//		            int totalCAPSLast30Days = totalCAPSSummary != null ? totalCAPSSummary.optInt("TotalCAPSLast30Days", 0) : 0;
+//		            int totalCAPSLast90Days = totalCAPSSummary != null ? totalCAPSSummary.optInt("TotalCAPSLast90Days", 0) : 0;
+//
+//		            int points30 = getPointsFor30Days(totalCAPSLast30Days);
+//		            int points90 = getPointsFor90Days(totalCAPSLast90Days);
+//
+//
+//
+//	
+//		            int dpd3MaxDaysPoints = dpdPoints.get("dpd_3_months_max_days_points");
+//		            int dpd6MaxDaysPoints = dpdPoints.get("dpd_6_months_max_days_points");
+//		            int dpd12MaxDaysPoints = dpdPoints.get("dpd_12_months_max_days_points");
+//		            int dpd24MaxDaysPoints = dpdPoints.get("dpd_24_months_max_days_points");
+//		            int dpd36MaxDaysPoints = dpdPoints.get("dpd_36_months_max_days_points");
+//		            int dpd3CountPoints = dpdPoints.get("dpd_3_months_count_points");
+//		            int dpd6CountPoints = dpdPoints.get("dpd_6_months_count_points");
+//		            int dpd12CountPoints = dpdPoints.get("dpd_12_months_count_points");
+//		            int dpd36CountPoints = dpdPoints.get("dpd_36_months_count_points");
+//		            
+//
+
+		            // Prepare response
+//		            Map<String, Object> data = new HashMap<>();
+//		            data.put("score", score);
+//		            data.put("pan", pan);
+//		            data.put("dob", dob);
+//		            data.put("email", email);
+//		            data.put("gender", gender);
+//		            data.put("pincode", pincode);
+//		            data.put("score_points", scorePoints);
+//		            data.put("max_vintage_in_months", maxVintageInMonths);
+//		            data.put("vintage_points", vintagePoints);
+//		            data.put("active_account_count", active_account_count);
+//		            data.put("active_account_points", activeAccountPoints);
+//		            data.put("total_amount_past_due", totalAmountPastDue);
+//		            data.put("overdue_points", overduePoints);	
+//		            data.put("suitfiled_writtenoff_points", suitPoints);
+
+//		            data.put("Points_CAPS_30_Days", points30);
+//		            data.put("Points_CAPS_90_Days", points90);
+//
+//		            
+//		            // Add individual DPD points in your requested format
+//		            data.put("dpd_3_max_days_points", dpd3MaxDaysPoints);
+//		            data.put("dpd_6_max_days_points", dpd6MaxDaysPoints);
+//		            data.put("dpd_12_max_days_points", dpd12MaxDaysPoints);
+//		            data.put("dpd_24_max_days_points", dpd24MaxDaysPoints);
+//		            data.put("dpd_36_max_days_points", dpd36MaxDaysPoints);
+//		            data.put("dpd_3_count_points", dpd3CountPoints);
+//		            data.put("dpd_6_count_points", dpd6CountPoints);
+//		            data.put("dpd_12_count_points", dpd12CountPoints);
+//		            data.put("dpd_36_count_points", dpd36CountPoints);
+//		            // Add DPD counts
+//		            data.putAll(dpdCounts);
+//		            
+//		            // Add max DPD values
+//		            data.putAll(maxDpd);
+		            
+		            // Add individual DPD points as requested
+//		            data.put("dpd_3m_points", dpdPoints.get("dpd_3_months_max_days_points"));
+//		            data.put("dpd_6m_points", dpdPoints.get("dpd_6_months_max_days_points"));
+//		            data.put("dpd_12m_points", dpdPoints.get("dpd_12_months_max_days_points"));
+//		            data.put("dpd_24m_points", dpdPoints.get("dpd_24_months_max_days_points"));
+//		            data.put("dpd_36m_points", dpdPoints.get("dpd_36_months_max_days_points"));
+//		            data.put("dpd_count_3m_points", dpdPoints.get("dpd_3_months_count_points"));
+//		            data.put("dpd_count_6m_points", dpdPoints.get("dpd_6_months_count_points"));
+//		            data.put("dpd_count_12m_points", dpdPoints.get("dpd_12_months_count_points"));
+//		            data.put("dpd_count_36m_points", dpdPoints.get("dpd_36_months_count_points"));
+//		            data.put("suitfiled_writtenoff_points", suitPoints);	
+//		            
+		            // Add total DPD score
+//		            data.put("total_dpd_score", dpdPoints.get("total_dpd_score"));
+		            
+		            // Add overall DPD summary
+//		            data.put("dpd_summary", createDPDSummary(dpdCounts, maxDpd, dpdPoints));
+		            
+		   		 // ✅ Store values in your response map
+//		            data.put("UnsecuredLoanScore", unsecuredScoreOverall);
+//		            data.put("TotalUnsecuredLoans", totalUnsecuredLoans);
+//		            data.put("UnsecuredLoansLast30Days", unsecuredScoreLast30);
+//		            data.put("UnsecuredLoansLast90Days", unsecuredLoansLast90);//just counted not to use 
+//		            data.put("LowAmountLoans30Days", lowAmt30Score);
+//		            data.put("LowAmountLoans90Days", lowAmt90Score);
+	
+//		            data.put("loanUtilRatio", String.valueOf(loanUtilRatio));
+//		            data.put("loanUtilScore", loanUtilScore);
+//
+//		            data.put("CC_Utilization_Score", String.valueOf(ccUtilScore));//all  creditcard utilization ratio
+//		            data.put("Credit_Utilization_Score", creditUtilScore);
+//		            data.put("Overall_Credit_Utilization_Percent",overallUtilPercent);
+//		            data.put("CC_Utilization_Percent",ccUtilPercent); // Round to 2 decimal places
+
+		            //data.put("CC_Utilization_Percent", Math.round(ccUtilPercent * 100.0) / 100.0); // Round to 2 decimal places
+		           // data.put("Overall_Credit_Utilization_Percent", Math.round(overallUtilPercent * 100.0) / 100.0);
+//		            data.put("Total_CC_Balance", totalCCBalance);
+//		            data.put("Total_CC_Limit", totalCCLimit);
+//		            data.put("Total_Overall_Balance", totalBalanceAll);
+//		            data.put("Total_Overall_Limit", totalLimitAll);
+//		            
+//		            //data.put("Loan_Utilization_Score", loanUtilScore);//total approved amount and current balance ratio for all active  loans 
+		            //data.put("Loan_Utilization_Ratio", Math.round(loanUtilRatio * 100.0) / 100.0); // in %, rounded to 2 decimals	            
+//		            data.put("Total_Loan_Original_Amount", totalLoanOriginalAmount);
+//		            data.put("Total_Loan_Current_Balance", totalLoanCurrentBalance);
+//		            data.put("repaymentScore", repaymentScoreStr);
+//		            double lcScore;
+		           // lcScore = (loanUtilRatio + ccUtilPercent)/2;
+		            
+//		           lcScore = ((totalCCBalance+totalLoanCurrentBalance)/(totalCCLimit+totalLoanOriginalAmount))*100;
+//		        // ✅ Round to 1 decimal places (truncate, not round up)
+//		           lcScore = Math.round(lcScore * 10.0) / 10.0;
+//		           data.put("Loan_creditCard_utilization_percentage",lcScore);
+//		            long finalScore;
+//		            finalScore = scorePoints+vintagePoints+activeAccountPoints+overduePoints+suitPoints+dpd3MaxDaysPoints+dpd6MaxDaysPoints+dpd12MaxDaysPoints+dpd24MaxDaysPoints+dpd36MaxDaysPoints+dpd3CountPoints+dpd6CountPoints+dpd12CountPoints+dpd36CountPoints
+//		            +points90+points30+unsecuredScoreOverall+unsecuredScoreLast30+lowAmt30Score+lowAmt90Score+ccUtilScore+loanUtilScore;
+//		            data.put("finalScore", finalScore);
+//		            if (optionalUser.isPresent()) {
+//		                UserInfo user = optionalUser.get();
+////		                user.setFinalScore((int)finalScore);  // ✅ Make sure this setter exists in your UserInfo entity
+//		                userInfoRepository.save(user);
+//		            }
+		            
+		            //  data.put("unsecured_loan_purpose_code", unsecuredLoanPurpose);  // <==stored unsecuredloan count
+//		            data.put("code", 1);//code 1 is for otp verified succesfully
+//		            data.put("message", "otp verified succesfully");
+//		            
+//		            return data;
+//
+//		        }
+//		        
+//		        catch (Exception e) {
+//		            e.printStackTrace();
+//		            Map<String, Object> data = new HashMap<>();
+//		            data.put("code", -1);//code -1 stands for OTP failed
+//		            data.put("message", "OTP verification failed: " + e.getMessage());
+//
+//		            return data;
+//
+//		        }
+//		    }
 
 
 	//============================================= verify otp end ===================================================================

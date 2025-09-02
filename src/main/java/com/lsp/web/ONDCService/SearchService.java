@@ -311,8 +311,8 @@ public class SearchService {
 			ondcFormDataDTO.setAddressL2(""); // Optional field
 //			ondcFormDataDTO.setCity("Pune"); // Static or derive if available
 //			ondcFormDataDTO.setState("Maharashtra"); // Same
-			ondcFormDataDTO.setCity(null);
-			ondcFormDataDTO.setState(null);
+			ondcFormDataDTO.setCity("NA");
+			ondcFormDataDTO.setState("NA");
 			ondcFormDataDTO.setPincode(
 					userInfo.getResidentialPincode() != null ? userInfo.getResidentialPincode().toString() : null);
 			ondcFormDataDTO.setAa_id(userInfo.getMobileNumber() + "@finvu");
