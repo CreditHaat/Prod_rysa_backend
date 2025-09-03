@@ -28,7 +28,7 @@ public class UserBureauData extends BaseEntity {
     @Column(name = "credit_score", length = 10)
     private String creditScore;
 
-    @Column(name = "response_content", columnDefinition = "TEXT")
+    @Column(name = "response_content", columnDefinition = "MEDIUMTEXT")
     private String responseContent;
 
     @Column(name = "user_id")

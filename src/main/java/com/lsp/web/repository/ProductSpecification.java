@@ -44,13 +44,24 @@ public class ProductSpecification {
 //    		AND only_salary = 0    -- if Self Employed
 //    		AND only_salary = 2    -- if Business
     	
+//        return (root, query, cb) -> {
+//            if ("Salaried".equalsIgnoreCase(profession)) {
+//                return cb.notEqual(root.get("onlySalary"), 2);
+//            } else if ("Self Employed".equalsIgnoreCase(profession)) {
+//                return cb.equal(root.get("onlySalary"), 0);
+//            } else if ("Business".equalsIgnoreCase(profession)) {
+//                return cb.equal(root.get("onlySalary"), 2);
+//            }
+//            return cb.conjunction(); // no condition
+//        };
+        
         return (root, query, cb) -> {
             if ("Salaried".equalsIgnoreCase(profession)) {
                 return cb.notEqual(root.get("onlySalary"), 2);
             } else if ("Self Employed".equalsIgnoreCase(profession)) {
                 return cb.equal(root.get("onlySalary"), 0);
             } else if ("Business".equalsIgnoreCase(profession)) {
-                return cb.equal(root.get("onlySalary"), 2);
+                return cb.equal(root.get("onlySalary"), 0);
             }
             return cb.conjunction(); // no condition
         };
