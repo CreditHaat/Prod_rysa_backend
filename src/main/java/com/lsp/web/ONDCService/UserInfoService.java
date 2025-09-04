@@ -440,11 +440,11 @@ public class UserInfoService {
 	public Map<String, Object> processVerifyOtpBureauData(String mobileNumber, JSONObject inProfileResponse){
 		
 		String score = null;
-		String pan = null;
+//		String pan = null;
 		String dob = null;
-		String email = null;
+//		String email = null;
 		String gender = null;
-		String pincode = null;
+//		String pincode = null;
 		
 		try {
 			
@@ -492,15 +492,16 @@ public class UserInfoService {
 						JSONObject applicantAddress = inProfileResponse.optJSONObject("Current_Application")
 								.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Address_Details");
 
-						pan = applicantDetails != null ? applicantDetails.optString("IncomeTaxPan", "") : "";
+//						pan = applicantDetails != null ? applicantDetails.optString("IncomeTaxPan", "") : "";
 						dob = applicantDetails != null ? applicantDetails.optString("Date_Of_Birth_Applicant", "") : "";
-						email = applicantDetails != null ? applicantDetails.optString("EMailId", "") : "";
+//						email = applicantDetails != null ? applicantDetails.optString("EMailId", "") : "";
 						gender = applicantDetails != null ? applicantDetails.optString("Gender_Code", "") : "";
-						pincode = applicantAddress != null ? applicantAddress.optString("PINCode", "") : "";
+//						pincode = applicantAddress != null ? applicantAddress.optString("PINCode", "") : "";
 						
 						// ===== Step 2: Fallback to CAIS_Account_DETAILS if missing =====
-						if (pan.isEmpty() || dob.isEmpty() || email.isEmpty() || gender.isEmpty() || pincode.isEmpty()) {
-							JSONObject caisAccount = inProfileResponse.optJSONObject("CAIS_Account");
+//						if (pan.isEmpty() || dob.isEmpty() || email.isEmpty() || gender.isEmpty() || pincode.isEmpty()) {
+						if (dob.isEmpty() || gender.isEmpty()) {	
+						JSONObject caisAccount = inProfileResponse.optJSONObject("CAIS_Account");
 							if (caisAccount != null) {
 								JSONArray accountDetails = caisAccount.optJSONArray("CAIS_Account_DETAILS");
 								if (accountDetails != null && accountDetails.length() > 0) {
@@ -508,23 +509,21 @@ public class UserInfoService {
 									if (firstAcc != null) {
 										JSONObject holderDetails = firstAcc.optJSONObject("CAIS_Holder_Details");
 										if (holderDetails != null) {
-											if (pan.isEmpty())
-												pan = holderDetails.optString("Income_TAX_PAN", "");
 											if (dob.isEmpty())
 												dob = holderDetails.optString("Date_of_birth", "");
-											if (email.isEmpty())
-												email = holderDetails.optString("EMailId", "");
+//											if (email.isEmpty())
+//												email = holderDetails.optString("EMailId", "");
 											if (gender.isEmpty())
 												gender = holderDetails.optString("Gender_Code", "");
 										}
 
-										JSONArray addressArray = firstAcc.optJSONArray("CAIS_Holder_Address_Details");
-										if (addressArray != null && addressArray.length() > 0) {
-											JSONObject firstAddress = addressArray.optJSONObject(0);
-											if (pincode.isEmpty()) {
-												pincode = firstAddress.optString("ZIP_Postal_Code_non_normalized", "");
-											}
-										}
+//										JSONArray addressArray = firstAcc.optJSONArray("CAIS_Holder_Address_Details");
+//										if (addressArray != null && addressArray.length() > 0) {
+//											JSONObject firstAddress = addressArray.optJSONObject(0);
+//											if (pincode.isEmpty()) {
+//												pincode = firstAddress.optString("ZIP_Postal_Code_non_normalized", "");
+//											}
+//										}
 									}
 								}
 							}
@@ -559,9 +558,9 @@ public class UserInfoService {
 //							}
 
 							// ✅ Save additional fields if present
-							if (email != null && !email.trim().isEmpty()) {
-								user.setEmail(email);
-							}
+//							if (email != null && !email.trim().isEmpty()) {
+//								user.setEmail(email);
+//							}
 							if (dob != null && !dob.trim().isEmpty()) {
 								try {
 									// Parse "19700101" into LocalDate
@@ -589,13 +588,13 @@ public class UserInfoService {
 							}
 
 							// ✅ Pincode (convert String → Integer)
-							if (pincode != null && !pincode.trim().isEmpty()) {
-								try {
-									user.setResidentialPincode(Integer.parseInt(pincode));
-								} catch (NumberFormatException e) {
-//									System.out.println("Invalid pincode value: " + pincode);
-								}
-							}
+//							if (pincode != null && !pincode.trim().isEmpty()) {
+//								try {
+//									user.setResidentialPincode(Integer.parseInt(pincode));
+//								} catch (NumberFormatException e) {
+////									System.out.println("Invalid pincode value: " + pincode);
+//								}
+//							}
 
 							// ✅ Persist updates
 							userInfoRepository.save(user);
@@ -603,11 +602,11 @@ public class UserInfoService {
 
 						Map<String, Object> data = new HashMap<>();
 						data.put("score", score);
-						data.put("pan", pan);
+//						data.put("pan", pan);
 						data.put("dob", dob);
-						data.put("email", email);
+//						data.put("email", email);
 						data.put("gender", gender);
-						data.put("pincode", pincode);
+//						data.put("pincode", pincode);
 
 //						data.put("code", 1);// code 1 is for otp verified succesfully
 //						data.put("message", "otp verified succesfully");
@@ -620,11 +619,11 @@ public class UserInfoService {
 			saveJourneyLogAndLogger(mobileNumber, "processVerifyOtpBureauData", 1, inProfileResponse, e.getMessage());
 			Map<String, Object> eMap = new HashMap<>();
 			eMap.put("score", score);
-			eMap.put("pan", pan);
+//			eMap.put("pan", pan);
 			eMap.put("dob", dob);
-			eMap.put("email", email);
+//			eMap.put("email", email);
 			eMap.put("gender", gender);
-			eMap.put("pincode", pincode);
+//			eMap.put("pincode", pincode);
 			return eMap;
 		}
 	}
