@@ -75,6 +75,8 @@ public class ProductController {
 			
 			globalUserInfo = optionalUserInfo1.get();
 			
+			
+			
 			if(!globalUserInfo.getCreditProfile().equals("1000")) {
 				
 				ResponseEntity<Map<String, Object>> response = checkBREONDC(mobile);
@@ -95,6 +97,7 @@ public class ProductController {
 					             return ResponseEntity.ok(finalList);
 				             }
 				             
+				             return null;
 				            
 				        } else {
 				        	
@@ -192,8 +195,89 @@ public class ProductController {
 					
 				}
 				
+				
 			}
 			
+			//use this if if we want the user to be entered without checking the bre----------------------------
+			
+//			if(!globalUserInfo.getCreditProfile().equals("1000")) {
+//				//Old code ////////////////////////////////////////////////////////////////////
+//	            UserInfo userInfo;
+//				Optional<UserInfo> optionalUserInfo = userinfoRepository.findByMobileNumber(mobile);
+//				if(optionalUserInfo.isEmpty()) {
+//					return null;
+//				}
+//				
+//				userInfo = optionalUserInfo.get();
+//				String profession = null;
+//				if (userInfo.getEmploymentType() == 1) {
+////		        	ondcFormDataDTO.setEmploymentType("Salaried");
+//					profession = "salaried";
+//				} else if (userInfo.getEmploymentType() == 2) {
+//					profession = "Self Employment";
+//				} else if (userInfo.getEmploymentType() == 3) {
+//					profession = "Self Employment";// as ondc form has only two fields salaried and
+//																			// self employed otherwise here would be
+//																			// Business
+//				}
+//				
+//
+////				String paymentType = null;
+//				int paymentType = userInfo.getPaymentType();
+//				float income = userInfo.getMonthlyIncome();
+//				String pincode = String.valueOf(userInfo.getResidentialPincode());
+//				String company = userInfo.getCompanyName();
+//				
+//				List<Product> products = productRepository.findByStatus(0);
+//				
+//				List<Product> finalList = new ArrayList();
+//				
+//				for(Product product : products) {
+//					String partner = product.getProductName();
+//					Product sortedProduct = productService.productInfoList(mobile, partner, profession, paymentType, income, pincode);
+//					if(sortedProduct!=null) {
+//						
+//						if(sortedProduct.getProductName().equalsIgnoreCase("bfl")) {
+//							ResponseEntity<Map<String, Object>> bajajResponse = checkSubscriberBajaj(mobile,(int) income, company);
+//							if(bajajResponse.getStatusCode().value() == 200) {
+//								
+//								Map<String, Object> responseBody = bajajResponse.getBody();
+//							    if (responseBody != null) {
+//							        Boolean responseStatus = (Boolean) responseBody.get("status");
+//							        String responseReason = (String) responseBody.get("reason");
+//							        
+//							        if (Boolean.FALSE.equals(responseStatus)) {
+//							            System.out.println("Error: " + responseStatus);
+//							        } else {
+//							        	finalList.add(sortedProduct);
+//							        }
+//							        
+//							    }
+//							}
+//							        
+//						}else {
+//							finalList.add(sortedProduct);
+//						}
+//						
+//						
+//					}
+//					
+//				}
+//				
+////				if(intPaymentType == 0) {
+////					paymentType = "cash";
+////				}else if(intPaymentType == 1) {
+////					paymentType = "cheque";
+////				}else if(intPaymentType == 2) {
+////					paymentType = "bank transfer";
+////				}
+////				
+//		        
+//		        return ResponseEntity.ok(finalList);
+//
+//			}
+			
+			//-----------------------------------------------------------------------------------
 			
 			//here we will call without master bre
 			else {
@@ -281,14 +365,29 @@ public class ProductController {
 				
 			}
 			
-			return null;
+//			return null;
 //			if(response.getStatusCode() == 200) {
 //				
 //			}
 			
+			Optional<Product> chproduct2 = productRepository.findByProductName("CreditHaat");
+            if(chproduct2.isPresent()) {
+           	 List<Product> finalList2 = new ArrayList();
+	             finalList2.add(chproduct2.get());
+	             return ResponseEntity.ok(finalList2);
+            }
+            
+            return null;
+			
 			
 		}catch(Exception e) {
 			e.printStackTrace();
+			Optional<Product> chproduct2 = productRepository.findByProductName("CreditHaat");
+            if(chproduct2.isPresent()) {
+           	 List<Product> finalList2 = new ArrayList();
+	             finalList2.add(chproduct2.get());
+	             return ResponseEntity.ok(finalList2);
+            }
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 		
@@ -392,8 +491,8 @@ public class ProductController {
                         ? (JSONArray) caisAccountDetailsObject
                         : new JSONArray().put(caisAccountDetailsObject);
 
-            int liveLoans = 0;
-            int lowTicketPL = 0;
+//            int liveLoans = 0;
+          //  int lowTicketPL = 0;
             int unsecuredGrowth6M = 0;
 
             Set<Integer> unsecuredPLTypes = new HashSet<>(Arrays.asList(5,6,8,9,15,37,45,47,69));
@@ -428,16 +527,16 @@ public class ProductController {
                 if (!historyResult.optBoolean("status", true)) return historyResult;
 
                 // Count live loans
-                int accountStatus = account.optInt("Account_Status", -1);
-                if (Arrays.asList(0,11,71,78,80,82,83,84,21,22,23,24,25).contains(accountStatus)) {
-                    liveLoans++;
-                }
+//                int accountStatus = account.optInt("Account_Status", -1);
+//                if (Arrays.asList(0,11,71,78,80,82,83,84,21,22,23,24,25).contains(accountStatus)) {
+//                    liveLoans++;
+//                }
 
                 // Low-ticket unsecured PL <= 25k
-                int loanAmount = account.optInt("Highest_Credit_or_Original_Loan_Amount", 0);
-                if (unsecuredPLTypes.contains(account.optInt("Account_Type", 0)) && loanAmount <= 25000) {
-                    lowTicketPL++;
-                }
+//                int loanAmount = account.optInt("Highest_Credit_or_Original_Loan_Amount", 0);
+//                if (unsecuredPLTypes.contains(account.optInt("Account_Type", 0)) && loanAmount <= 25000) {
+//                    lowTicketPL++;
+//                }
 
                 // Unsecured growth in last 6 months
                 if (ChronoUnit.MONTHS.between(openDate, buroReportMinusOneMonth) <= 6 &&
@@ -448,10 +547,10 @@ public class ProductController {
             }
 
             // Final Rule Checks
-            if (liveLoans > 5)
-                return createResponse_with_ONDC(false, "Live loans > 5", "Count: " + liveLoans, Collections.emptySet());
-            if (lowTicketPL > 3)
-                return createResponse_with_ONDC(false, "Too many low ticket PLs", "Count: " + lowTicketPL, Collections.emptySet());
+//            if (liveLoans > 5)
+//                return createResponse_with_ONDC(false, "Live loans > 5", "Count: " + liveLoans, Collections.emptySet());
+//            if (lowTicketPL > 3)
+//                return createResponse_with_ONDC(false, "Too many low ticket PLs", "Count: " + lowTicketPL, Collections.emptySet());
             if (unsecuredGrowth6M > 3)
                 return createResponse_with_ONDC(false, "Unsecured growth > 3 in 6 months", "Count: " + unsecuredGrowth6M, Collections.emptySet());
 
@@ -511,7 +610,7 @@ public class ProductController {
                 }
             }
 
-            if (totalDPD12Months >= 60) {
+            if (totalDPD12Months > 60) {
                 return createResponse_with_ONDC(false, "Fail: cumulative 60+ DPD in last 12 months",
                         "Total DPD in last 12 months: " + totalDPD12Months, Collections.emptySet());
             }
