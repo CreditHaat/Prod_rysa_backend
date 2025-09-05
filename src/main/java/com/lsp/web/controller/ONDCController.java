@@ -2,6 +2,7 @@ package com.lsp.web.controller;
 
 //import java.io.BufferedReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -385,6 +386,48 @@ public class ONDCController extends Utils {
 			map.put("workPincode", userInfo.get().getWorkPincode());
 			map.put("maritalStatus", userInfo.get().getMaritalStatus());
 			map.put("paymentType", userInfo.get().getPaymentType());
+			map.put("firstNameFromPan", userInfo.get().getFirstName());
+			map.put("lastNameFromPan", userInfo.get().getLastName());
+			map.put("panName", userInfo.get().getPanName());
+			map.put("dob",userInfo.get().getDob());
+
+			map.put("gender",userInfo.get().getGender() == 1 ? "male" : userInfo.get().getGender() == 2 ? "female" : "other");
+			map.put("pan", userInfo.get().getPan());
+			map.put("mobileNumber", userInfo.get().getMobileNumber());
+			map.put("email", userInfo.get().getEmail());
+//            ondcFormDataDTO.setOfficialemail(userInfo.getWorkEmail());
+			map.put("workEmail", userInfo.get().getWorkEmail());
+			
+			if (userInfo.get().getEmploymentType() == 1) {
+//            	ondcFormDataDTO.setEmploymentType("Salaried");
+				map.put("profession", "salaried");
+			} else if (userInfo.get().getEmploymentType() == 2) {
+				map.put("profession", "Self Employment");
+			} else if (userInfo.get().getEmploymentType() == 3) {
+				map.put("profession", "Self Employment");// as ondc form has only two fields salaried and
+																		// self employed otherwise here would be
+																		// Business
+			}
+			
+			int inc = 0;
+			if (userInfo.get().getMonthlyIncome() != null) {
+			    try {
+			        // Use BigDecimal to handle both integer and decimal values
+			        BigDecimal income = new BigDecimal(userInfo.get().getMonthlyIncome().toString());
+			        inc = income.intValue(); // safely converts (truncates decimal part if present)
+			    } catch (NumberFormatException e) {
+			        // log and keep inc = 0 if parsing fails
+			        System.err.println("Invalid income format: " + userInfo.get().getMonthlyIncome());
+			    }
+			}
+			
+			map.put("income", String.valueOf(inc));
+			
+			map.put("company", userInfo.get().getCompanyName());
+			map.put("addressline1", userInfo.get().getAddress());
+			
+			map.put("pincode", userInfo.get().getResidentialPincode() != null ? userInfo.get().getResidentialPincode().toString() : null);
+			
 			
 			return ResponseEntity.ok(map);
 		}catch(Exception e) {

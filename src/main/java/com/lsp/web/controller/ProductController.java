@@ -343,6 +343,8 @@ public class ProductController {
 									}
 									
 									
+								}else if(product.getProductName().equalsIgnoreCase("CreditHaat")) {
+									finalList.add(product);
 								}
 								
 							}
