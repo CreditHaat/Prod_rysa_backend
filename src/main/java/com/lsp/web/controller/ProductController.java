@@ -80,6 +80,39 @@ public class ProductController {
 			if(!globalUserInfo.getCreditProfile().equals("1000")) {
 				
 				ResponseEntity<Map<String, Object>> response = checkBREONDC(mobile);
+				
+				try {
+					if (response != null && response.getBody() != null) {
+					    Map<String, Object> body = response.getBody();
+
+					    String creditCard = (String) body.get("creditCard");
+
+					    // creditCardCount might come as Integer or Long
+					    Number creditCardCountNumber = (Number) body.get("creditCardCount");
+					    int creditCardCount = creditCardCountNumber != null ? creditCardCountNumber.intValue() : 0;
+
+					    System.out.println("Credit Card: " + creditCard);
+					    System.out.println("Credit Card Count: " + creditCardCount);
+					    
+					    UserBureauData userBureauData = null;
+						Optional<UserBureauData> optionalUserBureauData = userBureauDataRepository.findByMobileNumber(mobile);
+						if(optionalUserBureauData.isPresent()) {
+							
+							userBureauData = optionalUserBureauData.get();
+							
+							
+							
+							userBureauData.setActiveCreditCards(creditCardCount);
+							userBureauData.setPrime(Integer.parseInt(creditCard));
+							
+							userBureauDataRepository.save(userBureauData);
+							
+						}
+					}
+				}catch(Exception e) {
+					
+				}
+				
 				if(response.getStatusCode().value() == 200) {
 					
 					Map<String, Object> body = response.getBody();
@@ -443,19 +476,20 @@ public class ProductController {
     // ***************************************** BRE logic for ONDC ************************************************
     public JSONObject processCreditReport_Master_BRE_ONDC(String phone) {
         Set<String> subscriberNames = new HashSet();
+        int activeCreditCards=0;
         try {
             UserBureauData experian = null;
             try {
 //                experian = (UserBureauData) dao.get(ExperianData.class, "applyPhone='" + phone + "' order by createTime desc");
                 Optional<UserBureauData> optionalExperian = userBureauDataRepository.findLatestByPhone(phone);
                 if(optionalExperian.isEmpty() || StringUtil.nullOrEmpty(optionalExperian.get().getResponseContent()) ) {
-                	return createResponse_with_ONDC(false, "No Experian data found for phone: " + phone, "", Collections.emptySet());
+                	return createResponse_with_ONDC(false, "No Experian data found for phone: " + phone, "", Collections.emptySet(), activeCreditCards);
                 }
                 
                 experian = optionalExperian.get();
             } catch (Exception e) {
                 e.printStackTrace();
-                return createResponse_with_ONDC(false, "Database error: " + e.getMessage(), "", Collections.emptySet());
+                return createResponse_with_ONDC(false, "Database error: " + e.getMessage(), "", Collections.emptySet(), activeCreditCards);
             }
 
 //            if (experian == null || StringUtil.nullOrEmpty(experian.getResponseContent())) {
@@ -465,7 +499,7 @@ public class ProductController {
             JSONObject jsonData = new JSONObject(experian.getResponseContent());
             JSONObject inProfile = jsonData.optJSONObject("INProfileResponse");
             if (inProfile == null) {
-                return createResponse_with_ONDC(false, "INProfileResponse is null", "", Collections.emptySet());
+                return createResponse_with_ONDC(false, "INProfileResponse is null", "", Collections.emptySet(), activeCreditCards);
             }
 
 //            // Score Check
@@ -479,7 +513,7 @@ public class ProductController {
             // Report Date Check
             JSONObject header = inProfile.optJSONObject("Header");
             int reportDateInt = header != null ? header.optInt("ReportDate", 0) : 0;
-            if (reportDateInt == 0) return createResponse_with_ONDC(false, "Report date is null", "", Collections.emptySet());
+            if (reportDateInt == 0) return createResponse_with_ONDC(false, "Report date is null", "", Collections.emptySet(), activeCreditCards);
             LocalDate buroReportDate = LocalDate.parse(String.format("%08d", reportDateInt), DateTimeFormatter.BASIC_ISO_DATE);
             LocalDate buroReportMinusOneMonth = buroReportDate.minusMonths(1);
 
@@ -493,16 +527,30 @@ public class ProductController {
                         ? (JSONArray) caisAccountDetailsObject
                         : new JSONArray().put(caisAccountDetailsObject);
 
-//            int liveLoans = 0;
+            int liveLoans = 0;
           //  int lowTicketPL = 0;
             int unsecuredGrowth6M = 0;
 
             Set<Integer> unsecuredPLTypes = new HashSet<>(Arrays.asList(5,6,8,9,15,37,45,47,69));
-
+            // Step 1: Count active credit cards first
             for (int i = 0; i < accountDetailsArray.length(); i++) {
                 JSONObject account = accountDetailsArray.optJSONObject(i);
                 if (account == null) continue;
 
+                int accountType = account.optInt("Account_Type", -1);
+                String dateClosed = account.optString("Date_Closed", "");
+                if (accountType == 10 && (dateClosed == null || dateClosed.isEmpty())) {
+                    activeCreditCards++;
+                }
+            }
+
+            // Step 2: Apply all other rules
+
+            for (int i = 0; i < accountDetailsArray.length(); i++) {
+                JSONObject account = accountDetailsArray.optJSONObject(i);
+                if (account == null) continue;
+                int accountStatus = account.optInt("Account_Status", -1);
+                int accountType = account.optInt("Account_Type", -1);
                 // Date Reported & Vintage Check
                 int dateReportedInt = account.optInt("Date_Reported", 0);
                 int openDateInt = account.optInt("Open_Date", 0);
@@ -525,7 +573,7 @@ public class ProductController {
 
                 // DPD Checks
                 Object historyValue = account.opt("CAIS_Account_History");
-                JSONObject historyResult = processAccountHistory_Master_BRE_with_ONDC(historyValue, buroReportMinusOneMonth);
+                JSONObject historyResult = processAccountHistory_Master_BRE_with_ONDC(historyValue, buroReportMinusOneMonth, activeCreditCards);
                 if (!historyResult.optBoolean("status", true)) return historyResult;
 
                 // Count live loans
@@ -533,6 +581,12 @@ public class ProductController {
 //                if (Arrays.asList(0,11,71,78,80,82,83,84,21,22,23,24,25).contains(accountStatus)) {
 //                    liveLoans++;
 //                }
+                
+                // if account active and accountType are credit cards (10,31,35,60) then we are not calculating the cc actives counts in loan count
+                if (Arrays.asList(0,11,71,78,80,82,83,84,21,22,23,24,25).contains(accountStatus)
+                        && !Arrays.asList(10,31,35,36).contains(accountType)) {
+                    liveLoans++;
+                }
 
                 // Low-ticket unsecured PL <= 25k
 //                int loanAmount = account.optInt("Highest_Credit_or_Original_Loan_Amount", 0);
@@ -549,37 +603,37 @@ public class ProductController {
             }
 
             // Final Rule Checks
-//            if (liveLoans > 5)
-//                return createResponse_with_ONDC(false, "Live loans > 5", "Count: " + liveLoans, Collections.emptySet());
+            if (liveLoans > 5)
+                return createResponse_with_ONDC(false, "Live loans > 5", "Count: " + liveLoans, Collections.emptySet(),activeCreditCards);
 //            if (lowTicketPL > 3)
 //                return createResponse_with_ONDC(false, "Too many low ticket PLs", "Count: " + lowTicketPL, Collections.emptySet());
             if (unsecuredGrowth6M > 3)
-                return createResponse_with_ONDC(false, "Unsecured growth > 3 in 6 months", "Count: " + unsecuredGrowth6M, Collections.emptySet());
+                return createResponse_with_ONDC(false, "Unsecured growth > 3 in 6 months", "Count: " + unsecuredGrowth6M, Collections.emptySet(), activeCreditCards);
 
             // Enquiry counts
             JSONObject summary = inProfile.optJSONObject("TotalCAPS_Summary");
             if (summary != null) {
                 if (summary.optInt("TotalCAPSLast30Days",0) >= 5) {
-                    return createResponse_with_ONDC(false, "More than 5 enquiries in last 1 month", "", Collections.emptySet());
+                    return createResponse_with_ONDC(false, "More than 5 enquiries in last 1 month", "", Collections.emptySet(), activeCreditCards);
                 }
                 if (summary.optInt("TotalCAPSLast90Days",0) >= 10) {
-                    return createResponse_with_ONDC(false, "More than 10 enquiries in last 3 months", "", Collections.emptySet());
+                    return createResponse_with_ONDC(false, "More than 10 enquiries in last 3 months", "", Collections.emptySet(), activeCreditCards);
                 }
             }
 
-            return createResponse_with_ONDC(true, "All conditions passed", "", subscriberNames);
+            return createResponse_with_ONDC(true, "All conditions passed", "", subscriberNames, activeCreditCards);
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            return createResponse_with_ONDC(false, "Exception: " + ex.getMessage(), "", Collections.emptySet());
+            return createResponse_with_ONDC(false, "Exception: " + ex.getMessage(), "", Collections.emptySet(), activeCreditCards);
         }
     }
 
     // ***************************************** DPD Check ************************************************
-    public JSONObject processAccountHistory_Master_BRE_with_ONDC(Object historyValue, LocalDate buro_report_minus_one_month) {
+    public JSONObject processAccountHistory_Master_BRE_with_ONDC(Object historyValue, LocalDate buro_report_minus_one_month, int activeCreditCards) {
         try {
             if (historyValue == null)
-                return createResponse_with_ONDC(true, "No history data", "", Collections.emptySet());
+                return createResponse_with_ONDC(true, "No history data", "", Collections.emptySet(), activeCreditCards);
 
             JSONArray historyArray = historyValue instanceof JSONArray
                     ? (JSONArray) historyValue
@@ -604,34 +658,37 @@ public class ProductController {
 
                 if (monthsDiff <= 6 && daysPastDue > 0) {
                     return createResponse_with_ONDC(false, "Fail: 0+ DPD in last 6 months",
-                            "Days past due: " + daysPastDue + " in " + monthsDiff + " months", Collections.emptySet());
+                            "Days past due: " + daysPastDue + " in " + monthsDiff + " months", Collections.emptySet(), activeCreditCards);
                 }
                 if (monthsDiff <= 2 && daysPastDue > 0) {
                     return createResponse_with_ONDC(false, "Fail: 0+ DPD in last 2 months",
-                            "Days past due: " + daysPastDue + " in " + monthsDiff + " months", Collections.emptySet());
+                            "Days past due: " + daysPastDue + " in " + monthsDiff + " months", Collections.emptySet(), activeCreditCards);
                 }
             }
 
             if (totalDPD12Months > 60) {
                 return createResponse_with_ONDC(false, "Fail: cumulative 60+ DPD in last 12 months",
-                        "Total DPD in last 12 months: " + totalDPD12Months, Collections.emptySet());
+                        "Total DPD in last 12 months: " + totalDPD12Months, Collections.emptySet(), activeCreditCards);
             }
 
-            return createResponse_with_ONDC(true, "Days past due checks passed", "", Collections.emptySet());
+            return createResponse_with_ONDC(true, "Days past due checks passed", "", Collections.emptySet(), activeCreditCards);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return createResponse_with_ONDC(false, "History data error: " + e.getMessage(), "", Collections.emptySet());
+            return createResponse_with_ONDC(false, "History data error: " + e.getMessage(), "", Collections.emptySet(), activeCreditCards);
         }
     }
 
     // ***************************************** Helper method ************************************************
-    public JSONObject createResponse_with_ONDC(boolean status, String reason, String response, Set<String> subscriber_name) {
+    public JSONObject createResponse_with_ONDC(boolean status, String reason, String response, Set<String> subscriber_name, int activeCreditCards) {
         JSONObject json = new JSONObject();
         try {
             json.put("status", status);
             json.put("reason", reason);
-            json.put("response", response);
+            json.put("response", response);        
+            // Add Credit Card details in response
+            json.put("creditCard", activeCreditCards > 0 ? "1" : "0");//if yes then 1 else if 0 then no
+            json.put("creditCardCount", activeCreditCards);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -782,5 +839,4 @@ public class ProductController {
 
         return ResponseEntity.ok(result);
     }
-
 }

@@ -30,6 +30,12 @@ public class UserBureauData extends BaseEntity {
 
     @Column(name = "response_content", columnDefinition = "MEDIUMTEXT")
     private String responseContent;
+    
+    @Column(name="prime")
+    private Integer prime;
+    
+    @Column(name="active_credit_cards")
+    private Integer activeCreditCards;
 
     @Column(name = "user_id")
     private Long userId;
@@ -72,6 +78,22 @@ public class UserBureauData extends BaseEntity {
 
 	public void setResponseContent(String responseContent) {
 		this.responseContent = responseContent;
+	}
+
+	public Integer getPrime() {
+		return prime;
+	}
+
+	public void setPrime(Integer prime) {
+		this.prime = prime;
+	}
+
+	public Integer getActiveCreditCards() {
+		return activeCreditCards;
+	}
+
+	public void setActiveCreditCards(Integer activeCreditCards) {
+		this.activeCreditCards = activeCreditCards;
 	}
 
 	public Long getUserId() {
