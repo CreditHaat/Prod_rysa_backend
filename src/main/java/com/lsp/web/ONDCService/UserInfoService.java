@@ -321,6 +321,11 @@ public class UserInfoService {
 				Map<String, Object> data = new HashMap<>();
 				data.put("code", -1);
 				data.put("message", responseJson.getString("errorString"));
+				String stgOneHitId = input.optString("stgOneHitId", null);
+				String stgTwoHitId = input.optString("stgTwoHitId", null);
+				if(!stgOneHitId.equalsIgnoreCase("000000") && !stgTwoHitId.equals("000000")) {
+					data.put("isExperianOtp", "true");
+				}
 				
 				String mobileNumber = input.optString("Mobilenumber", null);
 				saveJourneyLogAndLogger(mobileNumber, "verifyOtp", 1, input, data);
@@ -441,9 +446,9 @@ public class UserInfoService {
 		
 		String score = null;
 //		String pan = null;
-		String dob = null;
+//		String dob = null;
 //		String email = null;
-		String gender = null;
+//		String gender = null;
 //		String pincode = null;
 		
 		try {
@@ -486,36 +491,36 @@ public class UserInfoService {
 						//-------------------------------------------------------------------------------
 						
 						// ===== Step 1: Try from Current_Applicant_Details first =====
-						JSONObject applicantDetails = inProfileResponse.optJSONObject("Current_Application")
-								.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Details");
-
-						JSONObject applicantAddress = inProfileResponse.optJSONObject("Current_Application")
-								.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Address_Details");
+//						JSONObject applicantDetails = inProfileResponse.optJSONObject("Current_Application")
+//								.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Details");
+//
+//						JSONObject applicantAddress = inProfileResponse.optJSONObject("Current_Application")
+//								.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Address_Details");
 
 //						pan = applicantDetails != null ? applicantDetails.optString("IncomeTaxPan", "") : "";
-						dob = applicantDetails != null ? applicantDetails.optString("Date_Of_Birth_Applicant", "") : "";
+//						dob = applicantDetails != null ? applicantDetails.optString("Date_Of_Birth_Applicant", "") : "";
 //						email = applicantDetails != null ? applicantDetails.optString("EMailId", "") : "";
-						gender = applicantDetails != null ? applicantDetails.optString("Gender_Code", "") : "";
+//						gender = applicantDetails != null ? applicantDetails.optString("Gender_Code", "") : "";
 //						pincode = applicantAddress != null ? applicantAddress.optString("PINCode", "") : "";
 						
 						// ===== Step 2: Fallback to CAIS_Account_DETAILS if missing =====
 //						if (pan.isEmpty() || dob.isEmpty() || email.isEmpty() || gender.isEmpty() || pincode.isEmpty()) {
-						if (dob.isEmpty() || gender.isEmpty()) {	
-						JSONObject caisAccount = inProfileResponse.optJSONObject("CAIS_Account");
-							if (caisAccount != null) {
-								JSONArray accountDetails = caisAccount.optJSONArray("CAIS_Account_DETAILS");
-								if (accountDetails != null && accountDetails.length() > 0) {
-									JSONObject firstAcc = accountDetails.optJSONObject(0);
-									if (firstAcc != null) {
-										JSONObject holderDetails = firstAcc.optJSONObject("CAIS_Holder_Details");
-										if (holderDetails != null) {
-											if (dob.isEmpty())
-												dob = holderDetails.optString("Date_of_birth", "");
-//											if (email.isEmpty())
-//												email = holderDetails.optString("EMailId", "");
-											if (gender.isEmpty())
-												gender = holderDetails.optString("Gender_Code", "");
-										}
+//						if (dob.isEmpty() || gender.isEmpty()) {	
+//						JSONObject caisAccount = inProfileResponse.optJSONObject("CAIS_Account");
+//							if (caisAccount != null) {
+//								JSONArray accountDetails = caisAccount.optJSONArray("CAIS_Account_DETAILS");
+//								if (accountDetails != null && accountDetails.length() > 0) {
+//									JSONObject firstAcc = accountDetails.optJSONObject(0);
+//									if (firstAcc != null) {
+//										JSONObject holderDetails = firstAcc.optJSONObject("CAIS_Holder_Details");
+//										if (holderDetails != null) {
+//											if (dob.isEmpty())
+//												dob = holderDetails.optString("Date_of_birth", "");
+////											if (email.isEmpty())
+////												email = holderDetails.optString("EMailId", "");
+//											if (gender.isEmpty())
+//												gender = holderDetails.optString("Gender_Code", "");
+//										}
 
 //										JSONArray addressArray = firstAcc.optJSONArray("CAIS_Holder_Address_Details");
 //										if (addressArray != null && addressArray.length() > 0) {
@@ -524,10 +529,10 @@ public class UserInfoService {
 //												pincode = firstAddress.optString("ZIP_Postal_Code_non_normalized", "");
 //											}
 //										}
-									}
-								}
-							}
-						}
+//									}
+//								}
+//							}
+//						}
 //						score = scoreJson != null ? scoreJson.optString("BureauScore", null) : null;
 
 			//================================================this code is used to save  bereauresponse in table====== 
@@ -561,31 +566,31 @@ public class UserInfoService {
 //							if (email != null && !email.trim().isEmpty()) {
 //								user.setEmail(email);
 //							}
-							if (dob != null && !dob.trim().isEmpty()) {
-								try {
-									// Parse "19700101" into LocalDate
-									DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-									LocalDate parsedDob = LocalDate.parse(dob, inputFormatter);
-
-									// If your UserInfo entity dob is String → save formatted String
-									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-									user.setDob(parsedDob.format(outputFormatter));
-
-									// If your UserInfo entity dob is LocalDate → just set parsedDob
-									// user.setDob(parsedDob);
-								} catch (Exception e) {
-//									System.out.println("Invalid DOB format: " + dob);
-								}
-							}
+//							if (dob != null && !dob.trim().isEmpty()) {
+//								try {
+//									// Parse "19700101" into LocalDate
+//									DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+//									LocalDate parsedDob = LocalDate.parse(dob, inputFormatter);
+//
+//									// If your UserInfo entity dob is String → save formatted String
+//									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//									user.setDob(parsedDob.format(outputFormatter));
+//
+//									// If your UserInfo entity dob is LocalDate → just set parsedDob
+//									// user.setDob(parsedDob);
+//								} catch (Exception e) {
+////									System.out.println("Invalid DOB format: " + dob);
+//								}
+//							}
 
 							// ✅ Gender (convert String → Integer)
-							if (gender != null && !gender.trim().isEmpty()) {
-								try {
-									user.setGender(Integer.parseInt(gender));
-								} catch (NumberFormatException e) {
-//									System.out.println("Invalid gender value: " + gender);
-								}
-							}
+//							if (gender != null && !gender.trim().isEmpty()) {
+//								try {
+//									user.setGender(Integer.parseInt(gender));
+//								} catch (NumberFormatException e) {
+////									System.out.println("Invalid gender value: " + gender);
+//								}
+//							}
 
 							// ✅ Pincode (convert String → Integer)
 //							if (pincode != null && !pincode.trim().isEmpty()) {
@@ -603,9 +608,9 @@ public class UserInfoService {
 						Map<String, Object> data = new HashMap<>();
 						data.put("score", score);
 //						data.put("pan", pan);
-						data.put("dob", dob);
+//						data.put("dob", dob);
 //						data.put("email", email);
-						data.put("gender", gender);
+//						data.put("gender", gender);
 //						data.put("pincode", pincode);
 
 //						data.put("code", 1);// code 1 is for otp verified succesfully
@@ -620,9 +625,9 @@ public class UserInfoService {
 			Map<String, Object> eMap = new HashMap<>();
 			eMap.put("score", score);
 //			eMap.put("pan", pan);
-			eMap.put("dob", dob);
+//			eMap.put("dob", dob);
 //			eMap.put("email", email);
-			eMap.put("gender", gender);
+//			eMap.put("gender", gender);
 //			eMap.put("pincode", pincode);
 			return eMap;
 		}
