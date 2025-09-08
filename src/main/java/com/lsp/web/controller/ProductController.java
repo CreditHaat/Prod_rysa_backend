@@ -829,7 +829,7 @@ public class ProductController {
                 long vintageMonths = ChronoUnit.MONTHS.between(openDate, buroReportMinusOneMonth);
 
                 // Amount Past Due
-                if (account.optInt("Amount_Past_Due", 0) > 0) {
+                if (account.optInt("Amount_Past_Due", 0) > 5000) {
                     return createResponse_with_ONDC(false, "Fail in amount past due", "Amount past due is " + account.optInt("Amount_Past_Due", 0), Collections.emptySet(), activeCreditCards);
                 }
 
@@ -865,8 +865,8 @@ public class ProductController {
             }
 
             //Final Rule Checks
-            if (liveLoans > 5)
-                return createResponse_with_ONDC(false, "Live loans > 5", "Count: " + liveLoans, Collections.emptySet(), activeCreditCards);
+            if (liveLoans > 10)
+                return createResponse_with_ONDC(false, "Live loans > 10", "Count: " + liveLoans, Collections.emptySet(), activeCreditCards);
             if (unsecuredGrowth6M > 3)
                 return createResponse_with_ONDC(false, "Unsecured growth > 3 in 6 months", "Count: " + unsecuredGrowth6M, Collections.emptySet(), activeCreditCards);
 
@@ -916,8 +916,8 @@ public class ProductController {
 
                 if (monthsDiff <= 12) totalDPD12Months += daysPastDue;
 
-                if (monthsDiff <= 6 && daysPastDue > 0) {
-                    return createResponse_with_ONDC(false, "Fail: 0+ DPD in last 6 months",
+                if (monthsDiff <= 6 && daysPastDue > 30) {
+                    return createResponse_with_ONDC(false, "Fail: 30+ DPD in last 6 months",
                             "Days past due: " + daysPastDue + " in " + monthsDiff + " months", Collections.emptySet(), activeCreditCards);
                 }
                 if (monthsDiff <= 2 && daysPastDue > 0) {
