@@ -75,8 +75,9 @@ public class UserInfo extends BaseEntity {
    
    @Column(name = "credit_profile")
    private String creditProfile;
-	
-	
+   
+//   @Column(name="campaign")
+//   private String campaign;
 
 	public Integer getActive() {
 	    return active;

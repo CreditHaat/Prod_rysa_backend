@@ -48,6 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lsp.web.Exception.LoanNotFoundException;
 import com.lsp.web.ONDCService.ConfirmService;
 import com.lsp.web.ONDCService.DisbursedLoanService;
+import com.lsp.web.ONDCService.FinvuService;
 import com.lsp.web.ONDCService.InitService;
 import com.lsp.web.ONDCService.LoanInstallmentsService;
 import com.lsp.web.ONDCService.SearchService;
@@ -66,9 +67,11 @@ import com.lsp.web.dto.StatusRequestDTO;
 import com.lsp.web.dto.UpdateFulfillmentRequestDTO;
 import com.lsp.web.dto.UpdatePaymentRequestDTO;
 import com.lsp.web.dto.UpdateRequestDTO;
+import com.lsp.web.entity.Callback;
 import com.lsp.web.entity.Master_City_State;
 import com.lsp.web.entity.Product;
 import com.lsp.web.entity.UserInfo;
+import com.lsp.web.repository.CallbackRepository;
 import com.lsp.web.repository.MasterCityStateRepository;
 import com.lsp.web.repository.ProductRepository;
 import com.lsp.web.repository.UserInfoRepository;
@@ -111,6 +114,12 @@ public class ONDCController extends Utils {
 	
 	@Autowired
 	private UserInfoRepository userInfoRepository;
+	
+	@Autowired
+	private FinvuService finvuService;
+	
+	@Autowired
+	private CallbackRepository callbackRepository;
 
 	@GetMapping("/createTransactionId")
 	public ResponseEntity<?> createId() {
@@ -472,5 +481,32 @@ public class ONDCController extends Utils {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 	}
+	
+	//srcref is consent handler id
+	@PostMapping("/finvuRedirect")
+	public ResponseEntity<?> finvuRedirect(@RequestParam(name="transactionId") String txnid,@RequestParam(name="srcref") String srcref, @RequestParam(name="mobileNumber") String mobileNumber, @RequestParam(name="redirectUrl") String redirecturl){
+		try {
+			String redirectionlinkforaa = finvuService.linkparam(txnid, srcref, mobileNumber, redirecturl);
+			return ResponseEntity.ok(redirectionlinkforaa);
+		}catch(Exception e) {
+			return null;
+		}
+	}
+	
+	@PostMapping("/setFrontendContext")
+	public ResponseEntity<?> frontendContext(@RequestParam(name="transactionId") String transactionId, @RequestParam("bppId") String bppId){
+		try {
+//			List<Callback> callbacks = callbackRepository.findByuID(transactionId);
+//			Optional<Callback> callbacks = callbackRepository.findByuIdLatest(transactionId);
+//			"pahal.lenderbridge.uat.ignosis.ai"
+			Optional<Callback> callbacks = callbackRepository.findByTransactionIdAndBppId(transactionId, bppId);
+			return ResponseEntity.ok(callbacks);
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 
 }
