@@ -28,4 +28,17 @@ public interface CallbackRepository extends JpaRepository<Callback, Long> {
 Optional<Callback> findByTransactionIdAndBppId(@Param("transactionId") String transactionId,
                                   @Param("bppId") String bppId);
 	
+	@Query(value = "SELECT * FROM t_callback " +
+            "WHERE callback_content IS NOT NULL " +
+            "AND callback_content <> '' " +
+            "AND JSON_VALID(callback_content) " +
+            "AND JSON_UNQUOTE(JSON_EXTRACT(callback_content, '$.context.bpp_id')) = :bppId " +
+            "AND JSON_UNQUOTE(JSON_EXTRACT(callback_content, '$.context.transaction_id')) = :transactionId " +
+            "AND JSON_UNQUOTE(JSON_EXTRACT(callback_content, '$.context.action')) <> :skipAction " +
+            "ORDER BY createtime DESC LIMIT 1",
+    nativeQuery = true)
+Optional<Callback> findLatestExcludingAction(@Param("transactionId") String transactionId,
+                                             @Param("bppId") String bppId,
+                                             @Param("skipAction") String skipAction);
+	
 }

@@ -63,8 +63,6 @@ public class ProductController {
             @RequestParam String mobile
     ) {
 		
-		
-		
 		try {
 			
 			UserInfo globalUserInfo;

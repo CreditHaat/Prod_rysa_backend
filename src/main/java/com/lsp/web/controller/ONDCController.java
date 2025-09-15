@@ -436,6 +436,7 @@ public class ONDCController extends Utils {
 			map.put("addressline1", userInfo.get().getAddress());
 			
 			map.put("pincode", userInfo.get().getResidentialPincode() != null ? userInfo.get().getResidentialPincode().toString() : null);
+			map.put("creditProfile", userInfo.get().getCreditProfile());
 			
 			
 			return ResponseEntity.ok(map);
@@ -493,6 +494,21 @@ public class ONDCController extends Utils {
 		}
 	}
 	
+//	@PostMapping("/setFrontendContext")
+//	public ResponseEntity<?> frontendContext(@RequestParam(name="transactionId") String transactionId, @RequestParam("bppId") String bppId){
+//		try {
+////			List<Callback> callbacks = callbackRepository.findByuID(transactionId);
+////			Optional<Callback> callbacks = callbackRepository.findByuIdLatest(transactionId);
+////			"pahal.lenderbridge.uat.ignosis.ai"
+//			Optional<Callback> callbacks = callbackRepository.findByTransactionIdAndBppId(transactionId, bppId);
+//			return ResponseEntity.ok(callbacks);
+//			
+//		}catch(Exception e) {
+//			e.printStackTrace();
+//			return null;
+//		}
+//	}
+	
 	@PostMapping("/setFrontendContext")
 	public ResponseEntity<?> frontendContext(@RequestParam(name="transactionId") String transactionId, @RequestParam("bppId") String bppId){
 		try {
@@ -500,6 +516,29 @@ public class ONDCController extends Utils {
 //			Optional<Callback> callbacks = callbackRepository.findByuIdLatest(transactionId);
 //			"pahal.lenderbridge.uat.ignosis.ai"
 			Optional<Callback> callbacks = callbackRepository.findByTransactionIdAndBppId(transactionId, bppId);
+			if(callbacks.isEmpty())
+			{
+				return null;
+			}else {
+				if(callbacks.get().getApi().equalsIgnoreCase("/on_status")) {
+					
+					//here we will get the submission id from the on_status
+					//code to get submission id
+					
+					//here we will find again from db the record before on_status
+					Optional<Callback> callbacks2 = callbackRepository.findLatestExcludingAction(transactionId, bppId, "on_status");//here on_status is the action that we will be skipping
+					if(callbacks2.isEmpty()) {
+						return null;
+					}else {
+						Callback returnCallback = callbacks2.get();
+						Map<String,Object> map = new HashMap();
+						map.put("content1", callbacks2);
+						map.put("content2", callbacks);
+						return ResponseEntity.ok(map);
+					}
+				}
+			}
+			
 			return ResponseEntity.ok(callbacks);
 			
 		}catch(Exception e) {
@@ -507,6 +546,8 @@ public class ONDCController extends Utils {
 			return null;
 		}
 	}
+	
+	
 	
 
 }

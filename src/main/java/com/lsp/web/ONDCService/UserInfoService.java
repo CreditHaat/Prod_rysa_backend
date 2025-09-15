@@ -46,6 +46,7 @@ import com.lsp.web.Exception.InvalidInputException;
 import com.lsp.web.Exception.OtpValidationException;
 import com.lsp.web.repository.JourneyLogRepository;
 import com.lsp.web.repository.LoggerRepository;
+import com.lsp.web.repository.MasterCityStateRepository;
 import com.lsp.web.repository.UserInfoRepository;
 
 @Service
@@ -65,6 +66,9 @@ public class UserInfoService {
 	
 	@Autowired
 	private LoggerRepository loggerRepository;
+	
+	@Autowired 
+	private MasterCityStateRepository masterCityStateRepository; 
 
 	// *****************new code for otp generation******************************/
 
@@ -662,258 +666,443 @@ public class UserInfoService {
 			
 		}
 	}
+	
+	//code by yogita//////////////////////////////////
+	//==============================================code by yogita==============================
+		// ================= Page 1 =================
+//		public UserInfoDto saveOrUpdatePage1(UserInfoDto dto) {
+//		    Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
+//		    UserInfo user = optionalUser.orElse(new UserInfo());
+	//
+//		    // Page1 fields
+//		    user.setMobileNumber(dto.getMobileNumber());
+	//
+//		    // DSA/SubDSA/Campaign set here
+//		    if (dto.getAgent() != null) user.setAgent(dto.getAgent());//agent = source
+//		    if (dto.getAgentId() != null) user.setAgentId(dto.getAgentId());//agent id = dsa
+//		    if (dto.getSubAgent() != null) user.setSub_agent(dto.getSubAgent());//subagent = sub dsa
+//		    if (dto.getCampaign() != null) user.setCampaign(dto.getCampaign());//agter question mark will will store all url
+	//
+//		    userInfoRepository.save(user);
+//		    return buildDto(user);
+//		}
+		public UserInfoDto saveOrUpdatePage1(UserInfoDto dto) {
+			
+		    Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
+		    UserInfo user = optionalUser.orElse(new UserInfo());
 
-//	public Map<?, ?> verifyOtp1(JSONObject input) {
-//		try {
-//			// Prepare external API call
-//			HttpClient httpClient = HttpClients.createDefault();
-//			HttpPost httpPost = new HttpPost("https://loan.credithaat.com/d2cforinternal/otpvalidate");
-//
-////		           HttpPost httpPost = new HttpPost("http://localhost/d2cforinternal/otpvalidate");
-//
-//			httpPost.setHeader("token", "Y3JlZGl0aGFhdHRlc3RzZXJ2ZXI="); // Replace with actual token
-//			httpPost.setHeader("Content-Type", "application/json");
-//
-//			StringEntity entity = new StringEntity(input.toString());
-//			httpPost.setEntity(entity);
-//
-//			HttpResponse httpResponse = httpClient.execute(httpPost);
-//			String jsonResponse = EntityUtils.toString(httpResponse.getEntity());
-//
-//			// System.out.println("Raw JSON Response from Experian API: " + jsonResponse);
-//
-//			if (jsonResponse == null || jsonResponse.trim().isEmpty() || jsonResponse.trim().equalsIgnoreCase("null")) {
-//				Map<String, Object> data = new HashMap<>();
-//				data.put("score", null);
-//				data.put("active_account_count", 0);
-//				data.put("code", 2);
-//				data.put("message", "otp verified successfully but experian not found");
-//				long finalScore = 20;
-//				data.put("finalScore", finalScore);
-//
-//				String mobileNumber = input.optString("Mobilenumber", null);
-//				Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(mobileNumber);
-//
-//				if (optionalUser.isPresent()) {
-//					UserInfo user = optionalUser.get();
-//					user.setCreditProfile("1000");
-//					userInfoRepository.save(user);
-//				}
-//
-//				return data; // ⬅️ return early if response is null/empty
-//			}
-//
-//			JSONObject responseJson = new JSONObject(jsonResponse);
-//			if ("OTP validation failed, OTP is not match".equalsIgnoreCase(responseJson.optString("errorString"))) {
-//				Map<String, Object> data = new HashMap<>();
-//				data.put("code", -1);
-//				data.put("message", responseJson.getString("errorString"));
-//				return data;
-//			}
-//
-//			// Handle null or empty response
-//			if (jsonResponse == null || jsonResponse.trim().isEmpty() || jsonResponse.trim().equalsIgnoreCase("null")) {
-//				Map<String, Object> data = new HashMap<>();
-//				data.put("score", null);
-//				data.put("active_account_count", 0);
-//				data.put("code", 2);
-//				data.put("message", "otp verified succesfully but experian not found");
-//				long finalScore = 20;
-//				data.put("finalScore", finalScore);
-//
-//				String mobileNumber = input.optString("Mobilenumber", null);
-//				Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(mobileNumber);
-//
-//				if (optionalUser.isPresent()) {
-//					UserInfo user = optionalUser.get();
-//					user.setCreditProfile("1000");
-////			                user.setFinalScore((int)finalScore);  // ✅ Make sure this setter exists in your UserInfo entity
-//					userInfoRepository.save(user);
-//				}
-//				return data;
-//
-//			}
-//
-//			if (!jsonResponse.trim().startsWith("{")) {
-//				throw new Exception("Invalid response format. Not a JSON object: " + jsonResponse);
-//			}
-//
-//			// Parse JSON response
-//			JSONObject json = new JSONObject(jsonResponse);
-//
-//			// Step 1: Check if errorString is missing or null → means OTP is invalid
-////		         String errorString = json.optString("errorString", null);
-////		         if (errorString == null || errorString.trim().isEmpty()) {
-////		             Map<String, Object> data = new HashMap<>();
-////		             data.put("code", -1);
-////		             data.put("message", "Invalid OTP");
-////		             return data;
-////		         }
-//			JSONObject inProfileResponse = json.optJSONObject("INProfileResponse");
-//			// JSONObject errorString = json.optJSONObject("errorString");
-//
-//			if (inProfileResponse == null) {
-//				Map<String, Object> data = new HashMap<>();
-//				data.put("score", null);
-//				data.put("active_account_count", 0);
-//				// data.put("finalScore", finalScore);
-//				data.put("code", 2);// code 2 is for otp verified succesfully but experian not found
-//				data.put("message", "otp verified succesfully but experian not found");
-//				long finalScore = 20;
-//				data.put("finalScore", finalScore);
-//				String mobileNumber = input.optString("Mobilenumber", null);
-//				Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(mobileNumber);
-//
-//				if (optionalUser.isPresent()) {
-//					UserInfo user = optionalUser.get();
-////			                user.setFinalScore((int)finalScore);  // ✅ Make sure this setter exists in your UserInfo entity
-//					user.setCreditProfile("1000");
-//					userInfoRepository.save(user);
-//				}
-//				return data;
-//
-//			}
-//
-//			// Extract score
-//			JSONObject scoreJson = inProfileResponse.optJSONObject("SCORE");
-//			// ===== Step 1: Try from Current_Applicant_Details first =====
-//			JSONObject applicantDetails = inProfileResponse.optJSONObject("Current_Application")
-//					.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Details");
-//
-//			JSONObject applicantAddress = inProfileResponse.optJSONObject("Current_Application")
-//					.optJSONObject("Current_Application_Details").optJSONObject("Current_Applicant_Address_Details");
-//
-//			String pan = applicantDetails != null ? applicantDetails.optString("IncomeTaxPan", "") : "";
-//			String dob = applicantDetails != null ? applicantDetails.optString("Date_Of_Birth_Applicant", "") : "";
-//			String email = applicantDetails != null ? applicantDetails.optString("EMailId", "") : "";
-//			String gender = applicantDetails != null ? applicantDetails.optString("Gender_Code", "") : "";
-//			String pincode = applicantAddress != null ? applicantAddress.optString("PINCode", "") : "";
-//
-//			// ===== Step 2: Fallback to CAIS_Account_DETAILS if missing =====
-//			if (pan.isEmpty() || dob.isEmpty() || email.isEmpty() || gender.isEmpty() || pincode.isEmpty()) {
-//				JSONObject caisAccount = inProfileResponse.optJSONObject("CAIS_Account");
-//				if (caisAccount != null) {
-//					JSONArray accountDetails = caisAccount.optJSONArray("CAIS_Account_DETAILS");
-//					if (accountDetails != null && accountDetails.length() > 0) {
-//						JSONObject firstAcc = accountDetails.optJSONObject(0);
-//						if (firstAcc != null) {
-//							JSONObject holderDetails = firstAcc.optJSONObject("CAIS_Holder_Details");
-//							if (holderDetails != null) {
-//								if (pan.isEmpty())
-//									pan = holderDetails.optString("Income_TAX_PAN", "");
-//								if (dob.isEmpty())
-//									dob = holderDetails.optString("Date_of_birth", "");
-//								if (email.isEmpty())
-//									email = holderDetails.optString("EMailId", "");
-//								if (gender.isEmpty())
-//									gender = holderDetails.optString("Gender_Code", "");
-//							}
-//
-//							JSONArray addressArray = firstAcc.optJSONArray("CAIS_Holder_Address_Details");
-//							if (addressArray != null && addressArray.length() > 0) {
-//								JSONObject firstAddress = addressArray.optJSONObject(0);
-//								if (pincode.isEmpty()) {
-//									pincode = firstAddress.optString("ZIP_Postal_Code_non_normalized", "");
-//								}
-//							}
-//						}
-//					}
-//				}
-//			}
-//			String score = scoreJson != null ? scoreJson.optString("BureauScore", null) : null;
-//
-////================================================this code is used to save  bereauresponse in table====== 
-//
-//			String mobileNumber = input.optString("Mobilenumber", null);
-//			Optional<UserInfo> userInfoOpt = userInfoRepository.findByMobileNumber(mobileNumber);
-//
-//			if (userInfoOpt.isPresent() && inProfileResponse != null) {
-//				UserInfo user = userInfoOpt.get();
-//
-//				// Wrap the JSON in {"INProfileResponse": {...}}
-//				JSONObject wrappedResponse = new JSONObject();
-//				wrappedResponse.put("INProfileResponse", inProfileResponse);
-//
-//				userBureauDataService.saveOrUpdateBureauData(user, score, wrappedResponse.toString());
-//
-////		                if (score != null && !score.trim().isEmpty()) {
-////		                    user.setCreditProfile(score);
-////		                    userInfoRepository.save(user); 
-////		                }
-//				if (score != null && !score.trim().isEmpty()) {
-//					user.setCreditProfile(score);
-//				} else {
-//					// fallback to 1000 if score is missing
-//					user.setCreditProfile("1000");
-//				}
-//
-//				// ✅ Save additional fields if present
-//				if (email != null && !email.trim().isEmpty()) {
-//					user.setEmail(email);
-//				}
-//				if (dob != null && !dob.trim().isEmpty()) {
-//					try {
-//						// Parse "19700101" into LocalDate
-//						DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-//						LocalDate parsedDob = LocalDate.parse(dob, inputFormatter);
-//
-//						// If your UserInfo entity dob is String → save formatted String
-//						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-//						user.setDob(parsedDob.format(outputFormatter));
-//
-//						// If your UserInfo entity dob is LocalDate → just set parsedDob
-//						// user.setDob(parsedDob);
-//					} catch (Exception e) {
-//						System.out.println("Invalid DOB format: " + dob);
-//					}
-//				}
-//
-//				// ✅ Gender (convert String → Integer)
-//				if (gender != null && !gender.trim().isEmpty()) {
-//					try {
-//						user.setGender(Integer.parseInt(gender));
-//					} catch (NumberFormatException e) {
-//						System.out.println("Invalid gender value: " + gender);
-//					}
-//				}
-//
-//				// ✅ Pincode (convert String → Integer)
-//				if (pincode != null && !pincode.trim().isEmpty()) {
-//					try {
-//						user.setResidentialPincode(Integer.parseInt(pincode));
-//					} catch (NumberFormatException e) {
-//						System.out.println("Invalid pincode value: " + pincode);
-//					}
-//				}
-//
-//				// ✅ Persist updates
-//				userInfoRepository.save(user);
-//			}
-//
-//			Map<String, Object> data = new HashMap<>();
-//			data.put("score", score);
-//			data.put("pan", pan);
-//			data.put("dob", dob);
-//			data.put("email", email);
-//			data.put("gender", gender);
-//			data.put("pincode", pincode);
-//
-//			data.put("code", 1);// code 1 is for otp verified succesfully
-//			data.put("message", "otp verified succesfully");
-//
-//			return data;
-//
+		    // Page1 fields
+		    user.setMobileNumber(dto.getMobileNumber());
+
+		    // DSA/SubDSA/Campaign set here
+		    if (dto.getAgent() != null) user.setAgent(dto.getAgent());//agent = source
+		    if (dto.getAgentId() != null) user.setAgentId(dto.getAgentId());//agent id = dsa
+		    if (dto.getSubAgent() != null) user.setSub_agent(dto.getSubAgent());//subagent = sub dsa
+		    if (dto.getCampaign() != null) user.setCampaign(dto.getCampaign());//after question mark will store all url
+		    if (dto.getChannel() != null) user.setChannel(dto.getChannel());//channel = channel
+		    
+		    userInfoRepository.save(user);
+		    return buildDto(user);
+		}
+		//=================generate otp=====================================================
+		
+		// Process OTP for the user
+		public ApiResponse aryseOtp(JSONObject input) {
+			try {
+				
+				String url = "https://loan.credithaat.com/api/otparyse";
+//		                String url = "http://localhost/d2cforinternal/otpgeneration";
+
+				// Create request body for OTP API
+				JSONObject requestBody = new JSONObject();
+				requestBody.put("phone", input.getString("Mobilenumber"));
+
+				// Set headers
+				HttpHeaders headers = new HttpHeaders();
+				headers.setContentType(MediaType.APPLICATION_JSON);
+				headers.set("token", "Y3JlZGl0aGFhdHRlc3RzZXJ2ZXI=");
+
+				HttpEntity<String> request = new HttpEntity<>(requestBody.toString(), headers);
+
+				// Make API call
+				RestTemplate restTemplate = new RestTemplate();
+				ResponseEntity<String> jsonResponse = restTemplate.postForEntity(url, request, String.class);
+
+				// Parse response
+				JSONObject responseJson = new JSONObject(jsonResponse.getBody());
+				// Create response
+				ApiResponse response = new ApiResponse();
+
+				response.setCode(200);
+				response.setMsg("OTP generated successfully");
+
+				return response;
+
+			} catch (Exception e) {
+				e.printStackTrace();
+				ApiResponse error = new ApiResponse();
+				error.setCode(500);
+				error.setMsg("Error in OTP processing: " + e.getMessage());
+				return error;
+			}
+		}
+		
+		public ApiResponse aryseVerifyOtp(JSONObject input) {
+		    try {
+		        String url = "https://loan.credithaat.com/api/otparysevalidate"; // third party verify OTP api url
+
+		        //String url = "http://localhost/api/otparysevalidate"; // third party verify OTP api url
+		        
+		        // Extract mobile and OTP from input
+		        String mobile = input.getString("Mobilenumber");
+		        String otp = input.getString("otp");
+
+		        JSONObject requestBody = new JSONObject();
+		        requestBody.put("phone", mobile);
+		        requestBody.put("otp", otp);
+		        requestBody.put("userId", ""); // Empty string - API will handle it
+
+		        HttpHeaders headers = new HttpHeaders();
+		        headers.setContentType(MediaType.APPLICATION_JSON);
+		        headers.set("token", "Y3JlZGl0aGFhdHRlc3RzZXJ2ZXI=");
+
+		        HttpEntity<String> request = new HttpEntity<>(requestBody.toString(), headers);
+
+		        RestTemplate restTemplate = new RestTemplate();
+		        ResponseEntity<String> jsonResponse = restTemplate.postForEntity(url, request, String.class);
+
+		        JSONObject responseJson = new JSONObject(jsonResponse.getBody());
+		        
+		        ApiResponse response = new ApiResponse();
+		        
+		        // Handle the specific response codes from third-party API
+		        int code = responseJson.getInt("code");
+		        String message = responseJson.optString("msg", "Unknown response");
+		        
+		        response.setCode(code);
+		        
+		        switch (code) {
+		            case 0:
+		                response.setMsg("OTP verified successfully");
+		                // You can also extract token and uid if needed
+		                JSONObject obj = responseJson.optJSONObject("obj");
+		                if (obj != null) {
+		                    // Store token and uid for future use if needed
+		                    String token = obj.optString("token");
+		                    String uid = obj.optString("uid");
+		                    // You might want to return this data or store it
+		                }
+		                break;
+		            case -1:
+		                response.setMsg("Invalid OTP");
+		                break;
+		            case -2:
+		                response.setMsg("OTP expired");
+		                break;
+		            default:
+		                response.setMsg(message);
+		                break;
+		        }
+		        
+		        return response;
+
+		    } catch (Exception e) {
+		        ApiResponse error = new ApiResponse();
+		        error.setCode(500);
+		        error.setMsg("Error verifying OTP: " + e.getMessage());
+		        return error;
+		    }
+		}
+		
+		//====================page 2================================================================
+		public UserInfoDto saveOrUpdatePage2(UserInfoDto dto) {
+		    UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+		        .orElseThrow(() -> new RuntimeException("Mobile not found"));
+
+		    // Update fields
+		    if (dto.getResidentialPincode() != null) user.setResidentialPincode(dto.getResidentialPincode());
+		    if (dto.getAddress() != null) user.setAddress(dto.getAddress());
+		    if (dto.getEmploymentType() != null) user.setEmploymentType(dto.getEmploymentType());
+		    if (dto.getPaymentType() != null) user.setPaymentType(dto.getPaymentType());
+		    if (dto.getMonthlyIncome() != null) user.setMonthlyIncome(dto.getMonthlyIncome());
+
+		    //FIRST: Always save the data
+		    userInfoRepository.save(user);
+
+		    // THEN: Check validation and throw exception if needed
+		    boolean validPincode = masterCityStateRepository
+		        .findByPincode(user.getResidentialPincode())
+		        .isPresent();
+		    boolean validIncome = (user.getMonthlyIncome() != null && user.getMonthlyIncome() >= 20000);
+
+		    if (!validPincode || !validIncome) {
+		        // Data already saved above, now throw exception for rejection response
+		        throw new RuntimeException("Invalid pincode or income below 20k");
+		    }
+
+		    return buildDto(user);
+		}
+		
+//		public ApiResponse aryseVerifyOtp(JSONObject input) {
+//		    try {
+//		        String url = "http://localhost/api/otparysevalidate"; // third party verify OTP api url
+	//
+//		        JSONObject requestBody = new JSONObject();
+//		        requestBody.put("phone", input.getString("Mobilenumber"));
+//		        requestBody.put("otp", input.getString("otp"));
+	//
+//		        HttpHeaders headers = new HttpHeaders();
+//		        headers.setContentType(MediaType.APPLICATION_JSON);
+//		        headers.set("token", "Y3JlZGl0aGFhdHRlc3RzZXJ2ZXI=");
+	//
+//		        HttpEntity<String> request = new HttpEntity<>(requestBody.toString(), headers);
+	//
+//		        RestTemplate restTemplate = new RestTemplate();
+//		        ResponseEntity<String> jsonResponse = restTemplate.postForEntity(url, request, String.class);
+	//
+//		        JSONObject responseJson = new JSONObject(jsonResponse.getBody());
+	//
+//		        ApiResponse response = new ApiResponse();
+//		        // ✅ use new style
+//		        response.setCode(jsonResponse.getStatusCode().value());
+//		        response.setMsg(responseJson.optString("message", "OTP verification status"));
+//		        return response;
+	//
+//		    } catch (Exception e) {
+//		        ApiResponse error = new ApiResponse();
+//		        error.setCode(500);
+//		        error.setMsg("Error verifying OTP: " + e.getMessage());
+//		        return error;
+//		    }
 //		}
-//
-//		catch (Exception e) {
-//			e.printStackTrace();
-//			Map<String, Object> data = new HashMap<>();
-//			data.put("code", -1);// code -1 stands for OTP failed
-//			data.put("message", "OTP verification failed: " + e.getMessage());
-//
-//			return data;
-//
-//		}
-//	}
+	//
+
+
+	    // ================= Page 2 ===============================================================================
+		
+		
+//	    public UserInfoDto saveOrUpdatePage2(UserInfoDto dto) {
+//	        UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+//	                .orElseThrow(() -> new RuntimeException("Mobile not found"));
+	//
+//	        if (dto.getResidentialPincode() != null) user.setResidentialPincode(dto.getResidentialPincode());
+//	        if (dto.getAddress() != null) user.setAddress(dto.getAddress());
+//	        if (dto.getEmploymentType() != null) user.setEmploymentType(dto.getEmploymentType());
+//	        if (dto.getPaymentType() != null) user.setPaymentType(dto.getPaymentType());
+//	        if (dto.getMonthlyIncome() != null) user.setMonthlyIncome(dto.getMonthlyIncome());
+	//
+//	        //  Validation logic
+//	        boolean validPincode = masterCityStateRepository
+//	                .findByPincode(user.getResidentialPincode())
+//	                .isPresent();
+	//
+//	        boolean validIncome = (user.getMonthlyIncome() != null && user.getMonthlyIncome() >= 20000);
+	//
+//	        if (!validPincode || !validIncome) {
+//	            throw new RuntimeException("Rejected: Invalid pincode or income below 20k");
+//	        }
+	//
+//	        userInfoRepository.save(user);
+//	        return buildDto(user);
+//	    }
+
+	 // ================= Page 3 ===========================================================
+	    public UserInfoDto saveOrUpdatePage3(UserInfoDto dto) {
+	        UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+	                .orElseThrow(() -> new RuntimeException("Mobile not found"));
+
+	        // Full Name from frontend
+	        String fullName = dto.getFirstName();
+	        if (fullName != null && !fullName.trim().isEmpty()) {
+	            fullName = fullName.trim();
+
+	            // ✅ Save full name directly in panName
+	            user.setPanName(fullName);
+
+	            // ✅ Split full name into first, last, and father name
+	            String[] parts = fullName.split("\\s+");
+	            user.setFirstName(parts[0]); // first word as first name
+
+	            if (parts.length == 2) {
+	                user.setLastName(parts[1]);
+	                user.setFatherName(null);
+	            } else if (parts.length > 2) {
+	                user.setLastName(parts[parts.length - 1]);
+
+	                StringBuilder middle = new StringBuilder();
+	                for (int i = 1; i < parts.length - 1; i++) {
+	                    middle.append(parts[i]);
+	                    if (i < parts.length - 2) middle.append(" ");
+	                }
+	                user.setFatherName(middle.toString());
+	            }
+	        }
+
+	        // Other optional details
+	        if (dto.getPan() != null) user.setPan(dto.getPan());
+	        if (dto.getEmail() != null) user.setEmail(dto.getEmail());
+	        if (dto.getGender() != null) user.setGender(dto.getGender());
+	        //converted date here dd-mm-yyyy to yyyy-mm-dd format
+	        if (dto.getDob() != null && !dto.getDob().isEmpty()) {
+	            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+	            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+	            LocalDate parsedDate = LocalDate.parse(dto.getDob(), inputFormatter);
+	            String formattedDate = parsedDate.format(outputFormatter);
+
+	            user.setDob(formattedDate); // assuming dob is String in DB
+	        }
+
+	        // Save to DB
+	        userInfoRepository.save(user);
+	        return buildDto(user);
+	    }
+
+
+	    // ================= Page 4 =========================================
+	    public UserInfoDto saveOrUpdatePage4(UserInfoDto dto) {
+	        System.out.println("Incoming Page4 request for mobile: " + dto.getMobileNumber());
+	        System.out.println("CompanyName: " + dto.getCompanyName());
+	        System.out.println("WorkEmail: " + dto.getWorkEmail());
+	        System.out.println("WorkPincode: " + dto.getWorkPincode());
+
+	        UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+	                .orElseThrow(() -> new RuntimeException("Mobile not found"));
+
+	        if (dto.getCompanyName() != null) user.setCompanyName(dto.getCompanyName());
+	        if (dto.getWorkEmail() != null) user.setWorkEmail(dto.getWorkEmail());
+	        if (dto.getWorkPincode() != null) user.setWorkPincode(dto.getWorkPincode());
+
+	        userInfoRepository.save(user);
+	        return buildDto(user);
+	    }
+
+//	    public UserInfoDto saveOrUpdatePage4(UserInfoDto dto) {
+//	        UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+//	                .orElseThrow(() -> new RuntimeException("Mobile not found"));
+	//
+//	        if (dto.getCompanyName() != null) user.setCompanyName(dto.getCompanyName());
+//	        if (dto.getWorkEmail() != null) user.setWorkEmail(dto.getWorkEmail());
+//	        if (dto.getWorkPincode() != null) user.setWorkPincode(dto.getWorkPincode());
+	//
+//	        userInfoRepository.save(user);
+//	        return buildDto(user);
+//	    }
+
+	    // ================= Helper =================
+	    private UserInfoDto buildDto(UserInfo user) {
+	        UserInfoDto dto = new UserInfoDto();
+	        dto.setMobileNumber(user.getMobileNumber());
+	        dto.setPanName(user.getPanName());        
+	        dto.setFirstName(user.getFirstName());
+	        dto.setFatherName(user.getFatherName());
+	        dto.setLastName(user.getLastName());
+	        dto.setEmail(user.getEmail());
+	        dto.setPan(user.getPan());
+	        dto.setAddress(user.getAddress());
+	        dto.setResidentialPincode(user.getResidentialPincode());
+	        dto.setEmploymentType(user.getEmploymentType());
+	        dto.setPaymentType(user.getPaymentType());
+	        dto.setMonthlyIncome(user.getMonthlyIncome());
+	        dto.setCompanyName(user.getCompanyName());
+	        dto.setWorkEmail(user.getWorkEmail());
+	        dto.setWorkPincode(user.getWorkPincode());
+	        dto.setGender(user.getGender());
+	        dto.setDob(user.getDob());
+	        
+	        dto.setAgent(user.getAgent());
+	        dto.setAgentId(user.getAgentId());
+	        dto.setSubAgent(user.getSub_agent());
+	        dto.setCampaign(user.getCampaign());
+	        return dto;
+	    }
+	    
+	    
+	    public JSONObject callExperianAryseFinApi(UserInfoDto dto) {
+	        try {
+	            String url = "https://loan.credithaat.com/d2c/bearuefetcharyse"; // AryseFin API
+//	            String url = "http://localhost/d2c/bearuefetcharyse"; // AryseFin API
+
+	            // Build request payload
+	            JSONObject requestBody = new JSONObject();
+	            requestBody.put("Mobilenumber", dto.getMobileNumber());
+	            requestBody.put("Firstname", dto.getFirstName());
+	            requestBody.put("Lastname", dto.getLastName() != null ? dto.getLastName() : "");
+	            requestBody.put("Email", dto.getEmail() != null ? dto.getEmail() : "");
+	            requestBody.put("PAN", dto.getPan() != null ? dto.getPan() : "");
+//	            requestBody.put("agent_id", 1246569);
+//	            requestBody.put("agent", "BTI");
+	            requestBody.put("agent_id", 357046965);
+	            requestBody.put("agent", "arysefinlead");
+
+	            // Set headers
+	            HttpHeaders headers = new HttpHeaders();
+	            headers.setContentType(MediaType.APPLICATION_JSON);
+	            headers.set("token", "Y3JlZGl0aGFhdHRlc3RzZXJ2ZXI="); 
+
+	            HttpEntity<String> request = new HttpEntity<>(requestBody.toString(), headers);
+
+	            // Make API call
+	            RestTemplate restTemplate = new RestTemplate();
+	            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+	            JSONObject respJson = new JSONObject(response.getBody());
+
+	            // ✅ CASE 1: Bureau data found
+	            if (respJson.has("INProfileResponse")) {
+	                JSONObject inProfileResponse = respJson.getJSONObject("INProfileResponse");
+
+	                // extract score
+	                JSONObject scoreJson = inProfileResponse.optJSONObject("SCORE");
+	                String score = scoreJson != null ? scoreJson.optString("BureauScore", null) : null;
+
+	                // fetch userinfo from db
+	                Optional<UserInfo> userInfoOpt = userInfoRepository.findByMobileNumber(dto.getMobileNumber());
+	                if (userInfoOpt.isPresent()) {
+	                    UserInfo user = userInfoOpt.get();
+
+	                    if (score != null && !score.trim().isEmpty()) {
+	                        user.setCreditProfile(score);
+	                    } else {
+	                        user.setCreditProfile("1000"); // fallback if score missing
+	                    }
+	                    userInfoRepository.save(user);
+
+	                    // Wrap response
+	                    JSONObject wrappedResponse = new JSONObject();
+	                    wrappedResponse.put("INProfileResponse", inProfileResponse);
+
+	                    // save bureau data
+	                    userBureauDataService.saveOrUpdateBureauData(user, score, wrappedResponse.toString());
+	                }
+	            } 
+	            // ❌ CASE 2: Bureau data not found
+	            else if ("consumer record not found".equalsIgnoreCase(respJson.optString("errorString"))) {
+	                Optional<UserInfo> userInfoOpt = userInfoRepository.findByMobileNumber(dto.getMobileNumber());
+	                if (userInfoOpt.isPresent()) {
+	                    UserInfo user = userInfoOpt.get();
+	                    user.setCreditProfile("1000");
+	                    userInfoRepository.save(user);
+	                }
+	            }
+
+	            return respJson;
+
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            try {
+	                JSONObject error = new JSONObject();
+	                error.put("error", "Experian API call failed: " + e.getMessage());
+	                return error;
+	            } catch (org.json.JSONException jsonEx) {
+	                jsonEx.printStackTrace();
+	                return null;
+	            }
+	        }
+	    }
+	
+	//////////////////////////////////////////////////
+
+
 
 }

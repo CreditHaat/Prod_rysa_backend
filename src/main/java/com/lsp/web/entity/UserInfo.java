@@ -73,11 +73,23 @@ public class UserInfo extends BaseEntity {
    @Column(name = "agent", length = 30)
    private String agent;
    
+   @Column(name = "sub_agent", length = 50)//sub dsa
+   private String sub_agent;
+
+   @Column(name = "source", length = 50)
+   private String source; //App Source
+
+   @Column(name = "web_source", length = 50)
+   private String webSource; //Web Source
+   
    @Column(name = "credit_profile")
    private String creditProfile;
    
-//   @Column(name="campaign")
-//   private String campaign;
+   @Column(name = "campaign", length = 500)
+   private String campaign;  //campaign
+
+   @Column(name = "channel", length = 50)
+   private String channel; //channel
 
 	public Integer getActive() {
 	    return active;
@@ -272,6 +284,48 @@ public class UserInfo extends BaseEntity {
 	public void setCreditProfile(String creditProfile) {
 		this.creditProfile = creditProfile;
 	}
+
+	public String getSub_agent() {
+		return sub_agent;
+	}
+
+	public void setSub_agent(String sub_agent) {
+		this.sub_agent = sub_agent;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
+	}
+
+	public String getWebSource() {
+		return webSource;
+	}
+
+	public void setWebSource(String webSource) {
+		this.webSource = webSource;
+	}
+
+	public String getCampaign() {
+		return campaign;
+	}
+
+	public void setCampaign(String campaign) {
+		this.campaign = campaign;
+	}
+
+	public String getChannel() {
+		return channel;
+	}
+
+	public void setChannel(String channel) {
+		this.channel = channel;
+	}
+	
+	
 	
     
 }
