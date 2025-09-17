@@ -701,6 +701,11 @@ public class UserInfoService {
 		    if (dto.getCampaign() != null) user.setCampaign(dto.getCampaign());//after question mark will store all url
 		    if (dto.getChannel() != null) user.setChannel(dto.getChannel());//channel = channel
 		    
+		  //fix: set active for new users
+//		    if (user.getId() == null) { // new record
+		        user.setActive(0); // or false, depending on business logic
+//		    }
+		    
 		    userInfoRepository.save(user);
 		    return buildDto(user);
 		}
