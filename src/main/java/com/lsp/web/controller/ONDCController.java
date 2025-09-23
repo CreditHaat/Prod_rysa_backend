@@ -68,12 +68,16 @@ import com.lsp.web.dto.UpdateFulfillmentRequestDTO;
 import com.lsp.web.dto.UpdatePaymentRequestDTO;
 import com.lsp.web.dto.UpdateRequestDTO;
 import com.lsp.web.entity.Callback;
+import com.lsp.web.entity.JourneyLog;
 import com.lsp.web.entity.Master_City_State;
 import com.lsp.web.entity.Product;
+import com.lsp.web.entity.UserBureauData;
 import com.lsp.web.entity.UserInfo;
 import com.lsp.web.repository.CallbackRepository;
+import com.lsp.web.repository.JourneyLogRepository;
 import com.lsp.web.repository.MasterCityStateRepository;
 import com.lsp.web.repository.ProductRepository;
+import com.lsp.web.repository.UserBureauDataRepository;
 import com.lsp.web.repository.UserInfoRepository;
 
 import ondc.onboarding.utility.Routes;
@@ -120,6 +124,12 @@ public class ONDCController extends Utils {
 	
 	@Autowired
 	private CallbackRepository callbackRepository;
+	
+	@Autowired
+	private JourneyLogRepository journeyLogRepository;
+	
+	@Autowired
+	private UserBureauDataRepository userBureauDataRepository;
 
 	@GetMapping("/createTransactionId")
 	public ResponseEntity<?> createId() {
@@ -546,6 +556,53 @@ public class ONDCController extends Utils {
 			return null;
 		}
 	}
+	
+	@PostMapping("/getFirstPageData")
+	public ResponseEntity<?> fetchFirstPageData(@RequestParam(name="mobileNumber") String mobileNumber){
+		try {
+			Optional<UserInfo> userInfo = userInfoRepository.findByMobileNumber(mobileNumber);
+			if(userInfo.isEmpty()) {
+				return null;
+			}
+			
+			//if user is present ----->
+			Optional<JourneyLog> journeyLog = journeyLogRepository.findByUser(userInfo.get().getId());
+			if(journeyLog.isEmpty()) {
+				return null;
+			}
+			
+//			List<Callback> callbacks = callbackRepository.findByuID(journeyLog.get().getUId());
+			
+			List<String> callbacks = callbackRepository.findContentByUid(journeyLog.get().getUId());
+			
+			ObjectMapper objectMapper = new ObjectMapper();
+			List<JsonNode> jsonCallback = new ArrayList();
+			for(String c : callbacks) {
+				
+				jsonCallback.add(objectMapper.readTree(c));
+			}
+			
+			return ResponseEntity.ok(jsonCallback);
+			
+		}catch(Exception e) {
+			
+		}
+		return null;
+	}
+	
+	@PostMapping("/getBureauData")
+	public ResponseEntity<?> fetchBureauData(@RequestParam(name="mobileNumber") String mobileNumber){
+		try {
+			Optional<UserBureauData> userBureauData = userBureauDataRepository.findLatestByPhone(mobileNumber);
+			return ResponseEntity.ok(userBureauData);
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+//	@PostMapping("/findJourneyLog")
 	
 	
 	

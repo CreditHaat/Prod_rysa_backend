@@ -41,4 +41,11 @@ Optional<Callback> findLatestExcludingAction(@Param("transactionId") String tran
                                              @Param("bppId") String bppId,
                                              @Param("skipAction") String skipAction);
 	
+	
+	@Query(
+			   value = "SELECT c.callback_content FROM t_callback c WHERE c.uid = :uid",
+			   nativeQuery = true
+			)
+			List<String> findContentByUid(String uid);
+	
 }

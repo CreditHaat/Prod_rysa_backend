@@ -148,9 +148,9 @@ public class ProductController {
 //					        	ondcFormDataDTO.setEmploymentType("Salaried");
 								profession = "salaried";
 							} else if (userInfo.getEmploymentType() == 2) {
-								profession = "Self Employment";
+								profession = "Self Employed";
 							} else if (userInfo.getEmploymentType() == 3) {
-								profession = "Self Employment";// as ondc form has only two fields salaried and
+								profession = "Business";// as ondc form has only two fields salaried and
 																						// self employed otherwise here would be
 																						// Business
 							}

@@ -25,13 +25,17 @@ package com.lsp.web.controller;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
 //import org.apache.http.HttpStatus;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +44,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.lsp.web.util.ApiResponse;
 import com.lsp.web.util.StringUtil;
@@ -310,9 +315,20 @@ public class UserInfoController {
                 UserInfoDto dto = new UserInfoDto();
                 dto.setMobileNumber(Objects.toString(payload.get("Mobilenumber"), ""));
                 dto.setFirstName(Objects.toString(payload.get("firstname"), ""));
-                dto.setLastName(Objects.toString(payload.get("lastname"), ""));
+//                dto.setLastName(Objects.toString(payload.get("lastname"), ""));
                 dto.setEmail(Objects.toString(payload.get("email"), ""));
                 dto.setPan(Objects.toString(payload.get("pan"), ""));
+                
+                String ln = Objects.toString(payload.get("lastname"));
+            	if(StringUtil.nullOrEmpty(ln)) {
+            		dto.setLastName(Objects.toString(payload.get("firstname"), ""));
+            	}
+            	else if(ln.equalsIgnoreCase("null")) {
+            		dto.setLastName(Objects.toString(payload.get("firstname"), ""));
+            	}
+            	else {
+            		dto.setLastName(Objects.toString(payload.get("lastname"), ""));
+            	}
 
                 // Call the API
                 JSONObject apiResponse = userInfoService.callExperianAryseFinApi(dto);
@@ -332,6 +348,80 @@ public class UserInfoController {
             }
         }
 
+        @CrossOrigin(origins = "*")
+        @PostMapping("/redirectUser")
+        public ResponseEntity<?> redirectUser(
+                @RequestParam(name = "mobileNumber") String mobileNumber,
+                @RequestParam(name = "agent") String agent,
+                @RequestParam(name = "agentId") String agentId) {
+
+            try {
+                Optional<UserInfo> userInfoOpt = userInfoRepository.findByMobileNumber(mobileNumber);
+                if (userInfoOpt.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+                }
+
+                UserInfo userInfo = userInfoOpt.get();
+
+                // 🔹 Build payload map
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("mobilenumber", userInfo.getMobileNumber());
+                payload.put("dob", userInfo.getDob());
+                
+                if(userInfo.getEmploymentType()==1) {
+                	payload.put("profession", "Salaried");
+                }else if(userInfo.getEmploymentType()==2) {
+                	payload.put("profession", "Self employed" );
+                }else if(userInfo.getEmploymentType()==3) {
+                	payload.put("profession", "Business" );
+                }
+                payload.put("income", userInfo.getMonthlyIncome());
+                payload.put("payment_type", userInfo.getPaymentType());
+                payload.put("pincode", userInfo.getResidentialPincode());
+                payload.put("firstname", userInfo.getFirstName());
+                payload.put("lastname", userInfo.getLastName());
+                payload.put("pan", userInfo.getPan());
+//                payload.put("gender", userInfo.getGender());
+                if(userInfo.getGender() == 1) {
+                	payload.put("gender", "male");
+                }else if(userInfo.getGender() == 2) {
+                	payload.put("gender", "female");
+                }else {
+                	payload.put("gender", "other");
+                }
+                payload.put("addressline1", userInfo.getAddress());
+                payload.put("email", userInfo.getEmail());
+                payload.put("officeaddresspincode", userInfo.getWorkPincode());
+                payload.put("maritalstatus", userInfo.getMaritalStatus());
+                payload.put("company", userInfo.getCompanyName());
+                payload.put("agentid", agentId); // from @RequestParam
+                payload.put("agent", agent);     // from @RequestParam
+                payload.put("creditprofile", userInfo.getCreditProfile());
+
+                // 🔹 Prepare headers
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set("token", "Y3JlZGl0aGFhdHRlc3RzZXJ2ZXI=");
+
+                // 🔹 Create entity
+                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+                // 🔹 Make POST call
+                RestTemplate restTemplate = new RestTemplate();
+                String url = "https://loan.credithaat.com/user/reg/embeddedarysefin"; // replace with real URL
+
+                ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+
+                userInfo.setActive(99);
+                userInfoRepository.save(userInfo);
+//                return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+                return ResponseEntity.ok(response.getBody());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Something went wrong");
+            }
+        }
 	
 	
 }	
