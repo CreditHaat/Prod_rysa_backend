@@ -604,7 +604,31 @@ public class ONDCController extends Utils {
 	
 //	@PostMapping("/findJourneyLog")
 	
-	
+	@PostMapping("/saveStage")
+	public ResponseEntity<?> saveStage(@RequestParam(name="mobileNumber") String mobileNumber, @RequestParam(name="transactionId") String transactionId, @RequestParam(name="gatewayUrl") String gatewayUrl, @RequestParam(name="platformId") String platformId, @RequestParam(name="stage") int stage){
+		try {
+			Optional<UserInfo> userInfo = userInfoRepository.findByMobileNumber(mobileNumber);
+			if(userInfo.isEmpty()) {
+//				return null;
+				return ResponseEntity.ok("null");
+			}
+			
+			JourneyLog journeyLog = new JourneyLog();
+			journeyLog.setPlatformId(platformId);
+			journeyLog.setUser(userInfo.get());
+			journeyLog.setRequestId(gatewayUrl);
+			journeyLog.setUId(transactionId);
+			journeyLog.setStage(stage);
+			
+			journeyLogRepository.save(journeyLog);
+			
+			return ResponseEntity.ok("ok");
+		}catch(Exception e) {
+			e.printStackTrace();
+//			return null;
+			return ResponseEntity.ok("exception occured");
+		}
+	}
 	
 
 }
