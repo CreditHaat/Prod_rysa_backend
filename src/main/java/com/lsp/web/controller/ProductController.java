@@ -863,8 +863,8 @@ public class ProductController {
             }
 
             //Final Rule Checks
-            if (liveLoans > 10)
-                return createResponse_with_ONDC(false, "Live loans > 10", "Count: " + liveLoans, Collections.emptySet(), activeCreditCards);
+            if (liveLoans > 4)
+                return createResponse_with_ONDC(false, "Live loans > 4", "Count: " + liveLoans, Collections.emptySet(), activeCreditCards);
             if (unsecuredGrowth6M > 3)
                 return createResponse_with_ONDC(false, "Unsecured growth > 3 in 6 months", "Count: " + unsecuredGrowth6M, Collections.emptySet(), activeCreditCards);
 
