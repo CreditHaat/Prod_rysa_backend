@@ -11,6 +11,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -61,6 +64,7 @@ import com.lsp.web.dto.ForeclosureUpdateRequestDTO;
 import com.lsp.web.dto.FormLogRequest;
 import com.lsp.web.dto.InitRequestDTO;
 import com.lsp.web.dto.MissedPaymentUpdateRequestDTO;
+import com.lsp.web.dto.ONDCFormDataDTO;
 import com.lsp.web.dto.SearchRequestDTO;
 import com.lsp.web.dto.SelectRequestDTO;
 import com.lsp.web.dto.StatusRequestDTO;
@@ -627,6 +631,135 @@ public class ONDCController extends Utils {
 			e.printStackTrace();
 //			return null;
 			return ResponseEntity.ok("exception occured");
+		}
+	}
+	
+	@PostMapping("/getONDCFormDataDTO")
+	public ResponseEntity<?> getONDCFormDataDTO(@RequestParam(name="mobileNumber") String mobileNumber){
+		try {
+			
+			Optional<UserInfo> optionlUserInfo = userInfoRepository.findByMobileNumber(mobileNumber);
+			if(optionlUserInfo.isEmpty()) {
+				return null;
+			}
+			
+			UserInfo userInfo = optionlUserInfo.get();
+			
+			String dobRaw = userInfo.getDob(); // The original DOB value
+			LocalDate dobDate = null;
+
+			// Try parsing the date with possible known formats
+			DateTimeFormatter[] knownFormats = new DateTimeFormatter[] { DateTimeFormatter.ofPattern("yyyy-MM-dd"), // common
+																													// API
+																													// format
+					DateTimeFormatter.ofPattern("dd/MM/yyyy"), // slash format
+					DateTimeFormatter.ofPattern("MM-dd-yyyy"), // US format
+					DateTimeFormatter.ofPattern("dd-MM-yyyy") // Desired format (already correct)
+			};
+
+			for (DateTimeFormatter format : knownFormats) {
+				try {
+					dobDate = LocalDate.parse(dobRaw, format);
+					break; // successfully parsed
+				} catch (DateTimeParseException e) {
+					// try next
+				}
+			}
+
+			if (dobDate == null) {
+				throw new RuntimeException("Unrecognized date format: " + dobRaw);
+			}
+
+			// Now format it to dd-MM-yyyy
+//            String dobFormatted = dobDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+			String dobFormatted = dobDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+//            String dobFormatted = dobDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+//            ondcFormDataDTO.setDob(dobFormatted);
+
+			// ----------------------------------------------------------------------------------------------------
+
+			// FormDataDTO
+			ONDCFormDataDTO ondcFormDataDTO = new ONDCFormDataDTO();
+
+//			ondcFormDataDTO.setPanName(userInfo.getFirstName() + " " + userInfo.getLastName());
+//			ondcFormDataDTO.setPanName(userInfo.getFirstName() + " "+userInfo.getFatherName()+" " + userInfo.getLastName());
+			ondcFormDataDTO.setPanName(userInfo.getPanName());
+			
+			String panName = userInfo.getPanName();
+
+//			ondcFormDataDTO.setFirstName(userInfo.getFirstName());
+//			ondcFormDataDTO.setLastName(userInfo.getLastName());
+			
+			if (panName != null && !panName.trim().isEmpty()) {
+			    String[] parts = panName.trim().split("\\s+", 2); // split into 2 parts
+			    String firstNameFromPan = parts[0]; // first word
+			    String lastNameFromPan = parts.length > 1 ? parts[1] : ""; // rest of the name if available
+
+			    ondcFormDataDTO.setFirstName(firstNameFromPan);
+			    ondcFormDataDTO.setLastName(lastNameFromPan);
+			    ondcFormDataDTO.setPanName(panName);
+			}
+			
+//            ondcFormDataDTO.setDob(userInfo.getDob());
+			ondcFormDataDTO.setDob(dobFormatted);
+
+			ondcFormDataDTO
+					.setGender(userInfo.getGender() == 1 ? "male" : userInfo.getGender() == 2 ? "female" : "other");
+			ondcFormDataDTO.setPan(userInfo.getPan());
+			ondcFormDataDTO.setContactNumber(userInfo.getMobileNumber());
+			ondcFormDataDTO.setEmail(userInfo.getEmail());
+//            ondcFormDataDTO.setOfficialemail(userInfo.getWorkEmail());
+			ondcFormDataDTO.setOfficialEmail(userInfo.getWorkEmail());
+
+			if (userInfo.getEmploymentType() == 1) {
+//            	ondcFormDataDTO.setEmploymentType("Salaried");
+				ondcFormDataDTO.setEmploymentType("salaried");
+			} else if (userInfo.getEmploymentType() == 2) {
+				ondcFormDataDTO.setEmploymentType("Self Employment");
+			} else if (userInfo.getEmploymentType() == 3) {
+				ondcFormDataDTO.setEmploymentType("Self Employment");// as ondc form has only two fields salaried and
+																		// self employed otherwise here would be
+																		// Business
+			}
+
+//			ondcFormDataDTO.setEndUse("consumerDurablePurchase"); // if static
+			ondcFormDataDTO.setEndUse("other");
+//            ondcFormDataDTO.setIncome(userInfo.getMonthlyIncome() != null ? userInfo.getMonthlyIncome().toString() : null);
+
+			int inc = 0;
+			if (userInfo.getMonthlyIncome() != null) {
+			    try {
+			        // Use BigDecimal to handle both integer and decimal values
+			        BigDecimal income = new BigDecimal(userInfo.getMonthlyIncome().toString());
+			        inc = income.intValue(); // safely converts (truncates decimal part if present)
+			    } catch (NumberFormatException e) {
+			        // log and keep inc = 0 if parsing fails
+			        System.err.println("Invalid income format: " + userInfo.getMonthlyIncome());
+			    }
+			}
+			
+			ondcFormDataDTO.setIncome(String.valueOf(inc));
+			
+			//			ondcFormDataDTO.setIncome("100000");
+			ondcFormDataDTO.setCompanyName(userInfo.getCompanyName());
+			ondcFormDataDTO.setUdyamNumber(null); // static or from another source
+			ondcFormDataDTO.setAddressL1(userInfo.getAddress());
+			ondcFormDataDTO.setAddressL2(""); // Optional field
+//			ondcFormDataDTO.setCity("Pune"); // Static or derive if available
+//			ondcFormDataDTO.setState("Maharashtra"); // Same
+			ondcFormDataDTO.setCity("NA");
+			ondcFormDataDTO.setState("NA");
+			ondcFormDataDTO.setPincode(
+					userInfo.getResidentialPincode() != null ? userInfo.getResidentialPincode().toString() : null);
+			ondcFormDataDTO.setAa_id(userInfo.getMobileNumber() + "@finvu");
+//            ondcFormDataDTO.setAa_id("")
+			ondcFormDataDTO.setBureauConsent("on");
+			
+			return ResponseEntity.ok(ondcFormDataDTO);
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 	
