@@ -2,6 +2,7 @@ package com.lsp.web.ONDCService;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -41,13 +42,19 @@ import com.lsp.web.configuration.*;
 import com.lsp.web.dto.UserInfoDto;
 import com.lsp.web.entity.JourneyLog;
 import com.lsp.web.entity.Logger;
+import com.lsp.web.entity.MIS;
+import com.lsp.web.entity.UserEngagementLog;
 import com.lsp.web.entity.UserInfo;
 import com.lsp.web.Exception.InvalidInputException;
 import com.lsp.web.Exception.OtpValidationException;
 import com.lsp.web.repository.JourneyLogRepository;
 import com.lsp.web.repository.LoggerRepository;
+import com.lsp.web.repository.MISRepository;
 import com.lsp.web.repository.MasterCityStateRepository;
+import com.lsp.web.repository.UserEngagementLogRepository;
 import com.lsp.web.repository.UserInfoRepository;
+import com.lsp.web.util.StringUtil;
+
 
 @Service
 public class UserInfoService {
@@ -69,6 +76,14 @@ public class UserInfoService {
 
 	@Autowired
 	private MasterCityStateRepository masterCityStateRepository;
+	
+	@Autowired 
+	private MISRepository misRepository;
+	
+	@Autowired
+	private UserEngagementLogRepository userEngagementLogRepository;
+
+
 
 	// *****************new code for otp generation******************************/
 
@@ -676,33 +691,110 @@ public class UserInfoService {
 //		    userInfoRepository.save(user);
 //		    return buildDto(user);
 //		}
+//	public UserInfoDto saveOrUpdatePage1(UserInfoDto dto) {
+//
+//		Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
+//		UserInfo user = optionalUser.orElse(new UserInfo());
+//
+//		// Page1 fields
+//		user.setMobileNumber(dto.getMobileNumber());
+//
+//		// DSA/SubDSA/Campaign set here
+//		if (dto.getAgent() != null)
+//			user.setAgent(dto.getAgent());// agent = source
+//		if (dto.getAgentId() != null)
+//			user.setAgentId(dto.getAgentId());// agent id = dsa
+//		if (dto.getSubAgent() != null)
+//			user.setSub_agent(dto.getSubAgent());// subagent = sub dsa
+//		if (dto.getCampaign() != null)
+//			user.setCampaign(dto.getCampaign());// after question mark will store all url
+//		if (dto.getChannel() != null)
+//			user.setChannel(dto.getChannel());// channel = channel
+//
+//		// fix: set active for new users
+////		    if (user.getId() == null) { // new record
+//		user.setActive(0); // or false, depending on business logic
+////		    }
+//
+//		userInfoRepository.save(user);
+//		return buildDto(user);
+//	}
+	
 	public UserInfoDto saveOrUpdatePage1(UserInfoDto dto) {
+		
+		  // ------------------ Prepare JSONObject for Reattribution ------------------
+	    try {
+	        JSONObject reattrDetails = new JSONObject();
+	        reattrDetails.put("mobileNumber", dto.getMobileNumber());
+	        reattrDetails.put("userId", ""); // Empty, reattribution will handle
+	        reattrDetails.put("channel", dto.getChannel() != null ? dto.getChannel() : "");
+	        reattrDetails.put("dsa", dto.getAgentId() != null ? dto.getAgentId().toString() : "");
+	        reattrDetails.put("sub_source", dto.getSubAgent() != null ? dto.getSubAgent() : "");
+	        reattrDetails.put("sub_dsa", dto.getSubAgent() != null ? dto.getSubAgent() : "");
+	        reattrDetails.put("query", dto.getCampaign() != null ? dto.getCampaign() : "");
+	        reattrDetails.put("source", dto.getAgent() != null ? dto.getAgent() : "");
+	        reattrDetails.put("clickid", dto.getClickId() != null ? dto.getClickId() : "");
+
+	        // ------------------ Call Reattribution Function ------------------
+	        reattribution_func(reattrDetails);
+
+	    } catch (Exception ex) {
+	        ex.printStackTrace();
+	    }
+
 
 		Optional<UserInfo> optionalUser = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
 		UserInfo user = optionalUser.orElse(new UserInfo());
+			
+//------------------ Handle MIS ----------------------------------------------------------
+		LocalDateTime now = LocalDateTime.now();
+		List<MIS> misList = misRepository.findAllByMobileNumberOrderByCreateTimeDesc(dto.getMobileNumber());
 
-		// Page1 fields
-		user.setMobileNumber(dto.getMobileNumber());
+		MIS mis = null;
 
-		// DSA/SubDSA/Campaign set here
-		if (dto.getAgent() != null)
-			user.setAgent(dto.getAgent());// agent = source
-		if (dto.getAgentId() != null)
-			user.setAgentId(dto.getAgentId());// agent id = dsa
-		if (dto.getSubAgent() != null)
-			user.setSub_agent(dto.getSubAgent());// subagent = sub dsa
-		if (dto.getCampaign() != null)
-			user.setCampaign(dto.getCampaign());// after question mark will store all url
-		if (dto.getChannel() != null)
-			user.setChannel(dto.getChannel());// channel = channel
+		if (!misList.isEmpty()) {
+		    MIS latestMIS = null;
+		    for (MIS m : misList) {
+		        if (!"cancel".equalsIgnoreCase(m.getCancelFlag())) {
+		            latestMIS = m;
+		            break;
+		        }
+		    }
 
-		// fix: set active for new users
-//		    if (user.getId() == null) { // new record
-		user.setActive(0); // or false, depending on business logic
-//		    }
+		    if (latestMIS != null && latestMIS.getCreateTime() != null && 
+		        latestMIS.getCreateTime().isAfter(now.minusDays(7))) {
+		        mis = latestMIS; // update same MIS
+		        mis.setClickId(user.getClickId());//===>important :take latest clickid from userinfo
+		    } else {
+		        // Expire all old MIS
+		        for (MIS old : misList) old.setCancelFlag("cancel");
+		        misRepository.saveAll(misList);
+		        
 
-		userInfoRepository.save(user);
-		return buildDto(user);
+		        // Create new MIS
+		        mis = new MIS();
+		        mis.setJourneyFlag("Not Completed");
+		        mis.setMobileNumber(dto.getMobileNumber());
+		        mis.setUser(user);
+		        mis.setCustomUserId("a-" + user.getId());
+		        mis.setClickId(user.getClickId());
+		    }
+		} else {
+		    // No MIS exists → create new
+		    mis = new MIS();
+		    mis.setJourneyFlag("Not Completed");
+		    mis.setMobileNumber(dto.getMobileNumber());
+		    mis.setUser(user);
+		    mis.setCustomUserId("a-" + user.getId());
+	        mis.setClickId(user.getClickId());
+
+		}
+
+		misRepository.save(mis);
+
+
+	    return buildDto(user);
+
 	}
 	// =================generate
 	// otp=====================================================
@@ -986,8 +1078,97 @@ public class UserInfoService {
 			user.setWorkPincode(dto.getWorkPincode());
 
 		userInfoRepository.save(user);
-		return buildDto(user);
+		//// ===================== Update MIS =====================
+//      MIS mis = misRepository.findByMobileNumber(dto.getMobileNumber())
+//              .orElseThrow(() -> new RuntimeException("MIS entry not found"));
+//
+//      // Set journeyFlag as Completed after page4
+//      mis.setJourneyFlag("Completed");
+//      
+//   // ----------------- Set Prime Flag -----------------
+//      Float salary = user.getMonthlyIncome();             // Page2
+//      Integer profession = user.getEmploymentType();      // 1 = salaried
+//      String creditProfileStr = user.getCreditProfile();  // Page3 score (String)
+//   // Initialize upfront
+//      String primeFlag = null; 
+//
+//      if (creditProfileStr != null) {
+//          int creditProfile = Integer.parseInt(creditProfileStr);
+//
+//          if (creditProfile == 1000) {
+//              primeFlag = "NTC";
+//          } else if (creditProfile >= 720 && salary >= 35000 && profession == 1) {
+//              primeFlag = "YES";
+//          } else {
+//              primeFlag = "NO";
+//          }
+//      }
+//
+//      // Save primeFlag in MIS
+//      mis.setPrimeFlag(primeFlag); // Safe, always initialized
+
+//
+//      misRepository.save(mis);
+//=====================================================================================
+	    // ------------------ MIS Handling ------------------
+		List<MIS> misList = misRepository.findAllByMobileNumberOrderByCreateTimeDesc(dto.getMobileNumber());
+		MIS mis = null;
+
+		for (MIS m : misList) {
+		    if (!"cancel".equalsIgnoreCase(m.getCancelFlag())) {
+		        mis = m;
+		        break;
+		    }
+		}
+
+		if (mis == null) {
+		    throw new RuntimeException("No active MIS found for this user");
+		}
+
+		// Update Page 4 flags
+		mis.setJourneyFlag("Completed");
+
+		Float salary = user.getMonthlyIncome();
+		Integer profession = user.getEmploymentType();
+		String creditProfileStr = user.getCreditProfile();
+
+		String primeFlag = null;
+		if (creditProfileStr != null) {
+		    int creditProfile = Integer.parseInt(creditProfileStr);
+		    if (creditProfile == 1000) {
+		        primeFlag = "NTC";
+		    } else if (creditProfile >= 720 && salary >= 35000 && profession == 1) {
+		        primeFlag = "YES";
+		    } else {
+		        primeFlag = "NO";
+		    }
+		}
+
+		mis.setPrimeFlag(primeFlag);
+		misRepository.save(mis);
+		
+	    return buildDto(user);
 	}
+		
+//		return buildDto(user);
+//	}
+	
+	
+
+//	    public UserInfoDto saveOrUpdatePage4(UserInfoDto dto) {
+//	        UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+//	                .orElseThrow(() -> new RuntimeException("Mobile not found"));
+	//
+//	        if (dto.getCompanyName() != null) user.setCompanyName(dto.getCompanyName());
+//	        if (dto.getWorkEmail() != null) user.setWorkEmail(dto.getWorkEmail());
+//	        if (dto.getWorkPincode() != null) user.setWorkPincode(dto.getWorkPincode());
+	//
+//	        userInfoRepository.save(user);
+//	        return buildDto(user);
+//	    }
+
+	
+	
 
 //	    public UserInfoDto saveOrUpdatePage4(UserInfoDto dto) {
 //	        UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
@@ -1114,6 +1295,232 @@ public class UserInfoService {
 	}
 
 	//////////////////////////////////////////////////
+	
+	  //====================Reattribution logic ====================
+    
+    public void reattribution_func(JSONObject reattribution_details) {
+    	
+   	 String mobileNumber = "";
+   	 String userId = "";
+   	 String channel = "";
+   	 String dsa = "";
+   	 String sub_source = "";
+   	 String sub_dsa = "";
+   	 String query = "";
+   	 String source = "";
+   	 String clickId="";
+   	 
+   	 mobileNumber = reattribution_details.optString("mobileNumber");
+   	 userId = reattribution_details.optString("userId");
+   	 channel = reattribution_details.optString("channel");
+   	 dsa = reattribution_details.optString("dsa");
+   	 sub_source = reattribution_details.optString("sub_source");
+   	 sub_dsa = reattribution_details.optString("sub_dsa");
+   	 query = reattribution_details.optString("query");
+   	 source = reattribution_details.optString("source");
+   	 clickId = reattribution_details.optString("clickid");
+
+   	
+   	boolean usernull = false;
+
+   // boolean isNewUser = false;
+
+    Optional<UserInfo> userOpt = userInfoRepository.findByMobileNumber(mobileNumber);
+    UserInfo user = userOpt.orElse(null);
+
+//   	UserInfoDto user = (UserInfoDto) dto.get(UserInfoDto.class, "mobilenumber='" + mobileNumber + "'");
+
+    
+    if(user==null) {
+   		user = new UserInfo();
+   		user.setMobileNumber(mobileNumber);
+   		user.setRegisterTime(LocalDateTime.now());       		
+   		user.setLastAttributionTime(LocalDateTime.now());
+   		user.setActive(0);
+   		//user.setRegTime(new Date());
+   		//user.setLast_attribution_time(new Date());
+   		
+   		try {
+   			//user.setAgentUserId(Integer.parseInt(dsa));
+   			user.setAgentId(Integer.parseInt(dsa));
+				user.setAgent(source);
+				user.setClickId(clickId);  // if you want to store it in UserInfo
+
+				//user.setSubagentUserId(Integer.parseInt(sub_dsa));
+				user.setSubAgentId(Integer.parseInt(sub_dsa));
+
+		
+				user.setSub_agent(sub_source);
+   		}catch(Exception ex) {}
+   		
+   		usernull = true;
+   		//user.setChannel("Credithaat");
+   		user.setChannel("AryseFin");
+   	   	//user.setChannel0("Cred Care");
+   		user.setClickId(clickId);
+   	   	user.setWebSource(source);
+   	   	user.setCampaign(query);
+   	}
+   	
+//   	try {
+//   	if(StringUtil.notEmpty(userId)) {
+//   	user.setUserId(userId);
+//   	}
+//   	}catch(Exception ex) {}
+//   	
+   	
+   	if(user!=null && usernull==false) {
+   		
+   		LocalDateTime last_attributio_time_check = null;
+   		
+   		try {
+   			last_attributio_time_check = user.getLastAttributionTime();
+   		}catch(Exception ex) {}
+   		
+   		
+   		if(last_attributio_time_check!=null) {
+   		LocalDateTime last_attribution_time = user.getLastAttributionTime();
+   		//Date currentDate = new Date();
+   		LocalDateTime currentDate = LocalDateTime.now();
+//   		long differenceInMilliseconds = ChronoUnit.DAYS.between(last_attribution_time, currentDate);
+//   		
+//   		//long differenceInMilliseconds = currentDate.getTime() - last_attribution_time.getTime();
+//           
+//           // Convert milliseconds to days
+//           long differenceInDays = differenceInMilliseconds / (1000 * 60 * 60 * 24);
+//     
+   		long differenceInDays = ChronoUnit.DAYS.between(last_attribution_time, currentDate);
+
+           
+           if(differenceInDays <= 60) {
+        	   UserEngagementLog user_engagement_log = new UserEngagementLog();
+				user_engagement_log.setMobileNumber(mobileNumber);
+				user_engagement_log.setUser(user);
+				user_engagement_log.setAgent(user.getAgent());
+				user_engagement_log.setLastAttributionTime(last_attributio_time_check);
+				user_engagement_log.setSub_agent(source);
+				user_engagement_log.setClickId(clickId);
+				try {
+	   				//user_engagement_log.setSub_agent(sub_source);
+	   				user_engagement_log.setAgentId(Integer.parseInt(dsa));
+					
+				//user_engagement_log.setAgentUserId(Integer.parseInt(dsa));
+				}catch(Exception ex) {}
+				user_engagement_log.setCampaign(query);
+				user_engagement_log.setRegisterTime(LocalDateTime.now());
+
+//				user_engagement_log.setRegTime(new Date());
+				user_engagement_log.setWebSource(source);
+				user_engagement_log.setClickId(clickId);
+
+				//UserEngagementLogRepository.saveOrUpdate(user_engagement_log);
+	   			userEngagementLogRepository.save(user_engagement_log);
+
+           }
+           else if(differenceInDays > 60) {
+   			if (StringUtil.notEmpty(dsa)) {
+//   				Agent agent = (Agent) dao.get(Agent.class, "crmUser='" + dsa + "'");
+//   				if (agent != null && agent.getCrmUser() != null) {
+   					user.setAgentId(Integer.parseInt(dsa));
+   					user.setAgent(source);
+   					user.setClickId(clickId);//seted click id also after 60 days it will be change in userinfo also
+   	    			user.setLastAttributionTime(LocalDateTime.now());
+//   				}
+   			  }
+   			
+   			if (StringUtil.notEmpty(sub_dsa)) {
+//					SubAgent subagent = (SubAgent) dao.get(SubAgent.class, "crmUser='" + sub_dsa + "'");
+//					if (subagent != null && subagent.getCrmUser() != null) {
+						user.setSubAgentId(Integer.parseInt(sub_dsa));
+						user.setSub_agent(sub_source);
+//					}
+				  }
+   			
+   			UserEngagementLog user_engagement_log = new UserEngagementLog();
+				user_engagement_log.setMobileNumber(mobileNumber);
+				user_engagement_log.setUser(user);
+				user_engagement_log.setLastAttributionTime(LocalDateTime.now());
+				user_engagement_log.setAgent(source);
+				user_engagement_log.setClickId(clickId);
+
+				try {
+				user_engagement_log.setAgentId(Integer.parseInt(dsa));
+				}catch(Exception ex) {}
+				user_engagement_log.setCampaign(query);
+				user_engagement_log.setRegisterTime(LocalDateTime.now());
+				user_engagement_log.setWebSource(source);
+				user_engagement_log.setClickId(clickId);
+
+//				dao.saveOrUpdate(user_engagement_log);
+	   			userEngagementLogRepository.save(user_engagement_log);
+
+				
+				user.setLastAttributionTime(LocalDateTime.now());
+           }
+   		}else {
+   			try {
+//   		        Calendar calendar = Calendar.getInstance();
+//   		        calendar.setTime(new Date());
+//   		        calendar.add(Calendar.DAY_OF_YEAR,-45);
+//   		        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//   		        UserInfo agentchecktime = (UserInfo)dao.get(UserInfo.class,"mobilenumber='"+mobileNumber+"' and createTime>'"+format.format(calendar.getTime())+"'");
+//   				
+   		  // New code using LocalDateTime
+   		     LocalDateTime date60DaysAgo = LocalDateTime.now().minusDays(60);
+   		     Optional<UserInfo> agentCheckTimeOpt = userInfoRepository.findByMobileNumberAndCreateTimeAfter(
+   		             mobileNumber, date60DaysAgo);
+   		     UserInfo agentCheckTime = agentCheckTimeOpt.orElse(null);
+   		        
+   		        
+   			if(StringUtil.nullOrEmpty(user.getAgent()) || agentCheckTime==null) {
+   			if (StringUtil.notEmpty(dsa)) {
+//   				Agent agent = (Agent) dao.get(Agent.class, "crmUser='" + dsa + "'");
+//   				if (agent != null && agent.getCrmUser() != null) {
+   					user.setAgentId(Integer.parseInt(dsa));
+   					user.setAgent(source);
+//   				}
+   			  }
+   			}
+   			
+   			try {
+   			if (StringUtil.notEmpty(sub_dsa)) {
+//   					SubAgent subagent = (SubAgent) dao.get(SubAgent.class, "crmUser='" + sub_dsa + "'");
+//   					if (subagent != null && subagent.getCrmUser() != null) {
+   						user.setSubAgentId(Integer.parseInt(sub_dsa));
+   						user.setSub_agent(sub_source);
+//   					}
+   			   }
+   			}catch(Exception ex) {}
+   			
+   			}catch(Exception ex){}
+   		}
+   	}
+   	
+		//dao.saveOrUpdate(user);
+   	userInfoRepository.save(user);
+		
+		try {
+			if(usernull==true) {
+				UserEngagementLog user_engagement_log = new UserEngagementLog();
+			user_engagement_log.setMobileNumber(mobileNumber);
+			user_engagement_log.setUser(user);
+			user_engagement_log.setLastAttributionTime(LocalDateTime.now());
+			user_engagement_log.setAgent(source);
+			user_engagement_log.setClickId(clickId);
+
+			try {
+			user_engagement_log.setAgentId(Integer.parseInt(dsa));
+			}catch(Exception ex) {}
+			user_engagement_log.setCampaign(query);
+			user_engagement_log.setRegisterTime(LocalDateTime.now());
+			user_engagement_log.setWebSource(source);
+			user_engagement_log.setClickId(clickId);
+
+//			dao.saveOrUpdate(user_engagement_log);
+			userEngagementLogRepository.save(user_engagement_log);
+			}
+		}catch(Exception ex) {}
+   }
 	
 
 

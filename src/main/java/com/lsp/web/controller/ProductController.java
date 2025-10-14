@@ -31,10 +31,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.lsp.web.ONDCService.ProductService;
 import com.lsp.web.entity.CompanyMaster;
+import com.lsp.web.entity.MIS;
 import com.lsp.web.entity.Product;
 import com.lsp.web.entity.UserBureauData;
 import com.lsp.web.entity.UserInfo;
 import com.lsp.web.repository.CompanyMasterRepository;
+import com.lsp.web.repository.MISRepository;
 import com.lsp.web.repository.ProductRepository;
 import com.lsp.web.repository.UserBureauDataRepository;
 import com.lsp.web.repository.UserInfoRepository;
@@ -58,6 +60,10 @@ public class ProductController {
 	@Autowired
 	private CompanyMasterRepository companyMasterRepository;
 	
+	@Autowired 
+	private MISRepository misRepository;
+
+
 	@GetMapping("/getSortedProducts")
     public ResponseEntity<?> getProductInfo(
             @RequestParam String mobile
@@ -75,7 +81,8 @@ public class ProductController {
 			
 			
 			
-			if(!globalUserInfo.getCreditProfile().equals("1000")) {
+//			if(!globalUserInfo.getCreditProfile().equals("1000")) {
+			if(!"1000".equals(globalUserInfo.getCreditProfile())) {
 				
 				ResponseEntity<Map<String, Object>> response = checkBREONDC(mobile);
 				
@@ -110,6 +117,93 @@ public class ProductController {
 				}catch(Exception e) {
 					
 				}
+				
+				
+				//============================new bre flag logic yogtia's code here =====================//
+//				
+//				boolean breStatus = Boolean.TRUE.equals(response.getBody().get("status"));
+//				productService.updateBreFlag(mobile, breStatus);
+
+				// Fetch latest active MIS for this mobile (7 days, not cancelled)
+				List<MIS> misList = misRepository.findAllByMobileNumberOrderByCreateTimeDesc(mobile);
+				MIS mis = null;
+
+				for (MIS m : misList) {
+				    if (!"cancel".equalsIgnoreCase(m.getCancelFlag())) {
+				        mis = m;
+				        break;
+				    }
+				}
+
+				if (mis == null) {
+				    // No active MIS → can't set BRE
+				    System.out.println("No active MIS found for this user to set BRE flag");
+				} else {
+				    // Default breFlag to blank if null
+				    if (mis.getBreFlag() == null) {
+				        mis.setBreFlag("");
+				    }
+
+				    // Salary and score
+				    float salary = globalUserInfo.getMonthlyIncome();
+				    int score = Integer.parseInt(globalUserInfo.getCreditProfile());
+				    boolean breStatus = false;
+
+				    if (response != null && response.getBody() != null) {
+				        Map<String, Object> body = response.getBody();
+				        breStatus = Boolean.TRUE.equals(body.get("status"));
+				    }
+
+				    // Set breFlag based on conditions
+				    if (salary >= 25000 && score >= 750 && score != 1000 && breStatus) {
+				        mis.setBreFlag("Pass");
+				    } else if (salary < 25000 || score < 750 || score == 1000 || !breStatus) {
+				        mis.setBreFlag("Fail");
+				    }
+
+				    // Save MIS
+				    System.out.println("Before save MIS: " + mis.getId() + ", breFlag=" + mis.getBreFlag());
+				    MIS savedMis = misRepository.saveAndFlush(mis);
+				    System.out.println("After save MIS: " + savedMis.getId() + ", breFlag=" + savedMis.getBreFlag());
+				}
+//=======================old bre flag logic by yogita=========================================
+				
+//				MIS mis = misRepository.findByMobileNumber(mobile).orElse(null);
+//
+//				if (mis == null) {
+//				    // No existing MIS, create new
+//				    mis = new MIS();
+//				    mis.setMobileNumber(mobile);
+//				}
+//
+//				// Default breFlag to blank if null
+//				if (mis.getBreFlag() == null) {
+//				    mis.setBreFlag("");
+//				}
+//
+//				// Salary and score
+//				float salary = globalUserInfo.getMonthlyIncome();
+//				int score = Integer.parseInt(globalUserInfo.getCreditProfile());
+//				boolean breStatus = false;
+//
+//				if (response != null && response.getBody() != null) {
+//				    Map<String, Object> body = response.getBody();
+//				    breStatus = Boolean.TRUE.equals(body.get("status"));
+//				}
+//
+//				// Set breFlag based on conditions
+//				if (salary >= 25000 && score >= 750 && score != 1000 && breStatus) {
+//				    mis.setBreFlag("Pass");
+//				} else if (salary < 25000 || score < 750 || score == 1000 || !breStatus) {
+//				    mis.setBreFlag("Fail");
+//				}
+//
+//				// Save or update MIS
+//				System.out.println("Before save MIS: " + mis.getId() + ", breFlag=" + mis.getBreFlag());
+//				MIS savedMis = misRepository.saveAndFlush(mis);
+//				System.out.println("After save MIS: " + savedMis.getId() + ", breFlag=" + savedMis.getBreFlag());
+
+//=================yogita's code end=============================================//	
 				
 				if(response.getStatusCode().value() == 200) {
 					

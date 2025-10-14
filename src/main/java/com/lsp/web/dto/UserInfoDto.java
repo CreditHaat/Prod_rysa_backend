@@ -421,50 +421,67 @@ import java.util.Date;
 public class UserInfoDto {
 
 	private String firstName;
-    private String fatherName;
-    private String lastName;
+	private String fatherName;
+	private String lastName;
 	private String mobileNumber;
 	private String email;
 	private String pan;
 	private Float loanAmount;
-	private Integer agentId;//dsa=285197218
-	private String agent;//&source=PLJourney =========>agent (dsa)
-    private String subAgent;   // Sub DSA
-    private String campaign;
-    private String webSource;
-    private String creditProfile;
+	private Integer agentId;// dsa=285197218
+	private String agent;// &source=PLJourney =========>agent (dsa)
+	private String subAgent; // Sub DSA
+	private String campaign;
+	private String webSource;
+	private String creditProfile;
 	private String dob;
-    private String address;
-    private String panName;
+	private String address;
+	private String panName;
 //    private String pincode;
 //    private String gender;
 //    private String maritalStatus;
 //    private String salary;
 //    private String paymentType;
-    private Integer residentialPincode; // matches entity
-    private Integer gender;             // matches entity
-    private Integer maritalStatus;      // matches entity
-    private Float monthlyIncome;        // maps to salary in DTO
-    private Integer paymentType;        // matches entity
-    private Integer employmentType; 
-    private String currentResidence;
-    private String residenceType;
-    private String monthlyExpense;
-    private String companyName;
-    private String workEmail;
-    private Integer workPincode;
-    private String idProof;
-    private String incomeProof;
-    private String employmentProof;
-    private Date registerTime;
-    private Integer priorityTwoScore;
-    private Integer priorityThreeScore;
+	private Integer residentialPincode; // matches entity
+	private Integer gender; // matches entity
+	private Integer maritalStatus; // matches entity
+	private Float monthlyIncome; // maps to salary in DTO
+	private Integer paymentType; // matches entity
+	private Integer employmentType;
+	private String currentResidence;
+	private String residenceType;
+	private String monthlyExpense;
+	private String companyName;
+	private String workEmail;
+	private Integer workPincode;
+	private String idProof;
+	private String incomeProof;
+	private String employmentProof;
+	private Date registerTime;
+	private Integer priorityTwoScore;
+	private Integer priorityThreeScore;
 	private String repaymentScore;
 	private Integer finalScore;
-	private String rejectionReason;  // added this to response after if user skip on second page
+	private String rejectionReason; // added this to response after if user skip on second page
 //    private String agent;      // DSA
 	private String channel;
 
+	private String clickId;// clickId=CLICKID
+
+	private String source;
+
+	private Integer subAgentId;
+
+	public Integer getSubAgentId() {
+
+		return subAgentId;
+
+	}
+
+	public void setSubAgentId(Integer subAgentId) {
+
+		this.subAgentId = subAgentId;
+
+	}
 
 	public String getChannel() {
 		return channel;
@@ -495,16 +512,18 @@ public class UserInfoDto {
 		// TODO Auto-generated constructor stub
 	}
 
-	public UserInfoDto(String firstName, String fatherName, String lastName, String mobileNumber, String email, String pan, Float loanAmount, Integer agentId,
-			String agent, String creditProfile, String dob, String address, Integer residentialPincode, Integer gender,
-			Integer maritalStatus, Float monthlyIncome, Integer paymentType, String currentResidence, String residenceType,String workEmail,Integer workPincode,
-			String monthlyExpense, String companyName, String idProof, String panName, String incomeProof, String employmentProof, Date registerTime,String subAgent,String campaign, Integer priorityTwoScore,
-     Integer priorityThreeScore,String webSource,String channel,
-     String repaymentScore,Integer finalScore) {
+	public UserInfoDto(String firstName, String fatherName, String lastName, String mobileNumber, String email,
+			String pan, Float loanAmount, Integer agentId, String agent, String creditProfile, String dob,
+			String address, Integer residentialPincode, Integer gender, Integer maritalStatus, Float monthlyIncome,
+			Integer paymentType, String currentResidence, String residenceType, String workEmail, Integer workPincode,
+			String monthlyExpense, String companyName, String idProof, String panName, String incomeProof,
+			String employmentProof, Date registerTime, String subAgent, String campaign, Integer priorityTwoScore,
+			Integer priorityThreeScore, String webSource, String channel, String clickId, String source,
+			Integer subAgentId, String repaymentScore, Integer finalScore) {
 		super();
 		this.firstName = firstName;
-        this.fatherName = fatherName;
-        this.lastName = lastName;
+		this.fatherName = fatherName;
+		this.lastName = lastName;
 		this.mobileNumber = mobileNumber;
 		this.email = email;
 		this.pan = pan;
@@ -523,24 +542,52 @@ public class UserInfoDto {
 		this.residenceType = residenceType;
 		this.monthlyExpense = monthlyExpense;
 		this.companyName = companyName;
-		this.workEmail= workEmail;
+		this.workEmail = workEmail;
 		this.panName = panName;
-		this.workPincode=workPincode;
+		this.workPincode = workPincode;
 		this.idProof = idProof;
 		this.incomeProof = incomeProof;
 		this.employmentProof = employmentProof;
 		this.registerTime = registerTime;
-		this.priorityTwoScore=priorityTwoScore;
-		this.priorityThreeScore=priorityThreeScore;
-		this.repaymentScore=repaymentScore;
-		this.finalScore=finalScore;
-		this.subAgent=subAgent;   // Sub DSA
-	    this.campaign=campaign; 
-	    this.webSource =webSource;
-	    this.channel = channel;
+		this.priorityTwoScore = priorityTwoScore;
+		this.priorityThreeScore = priorityThreeScore;
+		this.repaymentScore = repaymentScore;
+		this.finalScore = finalScore;
+		this.subAgent = subAgent; // Sub sorce
+		this.campaign = campaign;
+		this.webSource = webSource;
+		this.channel = channel;
+		this.clickId = clickId;
+
+		this.source = source;
+
+		this.subAgentId = subAgentId;
 
 	}
 
+	public String getClickId() {
+
+		return clickId;
+
+	}
+
+	public String getSource() {
+
+		return source;
+
+	}
+
+	public void setSource(String source) {
+
+		this.source = source;
+
+	}
+
+	public void setClickId(String clickId) {
+
+		this.clickId = clickId;
+
+	}
 
 	public String getWebSource() {
 		return webSource;
@@ -550,14 +597,29 @@ public class UserInfoDto {
 		this.webSource = webSource;
 	}
 
-	public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+	public String getFirstName() {
+		return firstName;
+	}
 
-    public String getFatherName() { return fatherName; }
-    public void setFatherName(String fatherName) { this.fatherName = fatherName; }
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
 
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+	public String getFatherName() {
+		return fatherName;
+	}
+
+	public void setFatherName(String fatherName) {
+		this.fatherName = fatherName;
+	}
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
 
 	public String getMobileNumber() {
 		return mobileNumber;
@@ -662,17 +724,18 @@ public class UserInfoDto {
 	public void setAddress(String address) {
 		this.address = address;
 	}
-    // ✅ Add this field for rejection
-    private String rejectedReason;
 
-    // Getters & Setters
-    public String getRejectedReason() {
-        return rejectedReason;
-    }
+	// ✅ Add this field for rejection
+	private String rejectedReason;
 
-    public void setRejectedReason(String rejectedReason) {
-        this.rejectedReason = rejectedReason;
-    }
+	// Getters & Setters
+	public String getRejectedReason() {
+		return rejectedReason;
+	}
+
+	public void setRejectedReason(String rejectedReason) {
+		this.rejectedReason = rejectedReason;
+	}
 
 //	public String getPincode() {
 //		return pincode;
@@ -857,6 +920,5 @@ public class UserInfoDto {
 	public void setEmploymentType(Integer employmentType) {
 		this.employmentType = employmentType;
 	}
-	
 
 }

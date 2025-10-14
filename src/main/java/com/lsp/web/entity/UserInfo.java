@@ -9,6 +9,8 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import com.lsp.web.genericentity.BaseEntity;
+
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 
@@ -19,6 +21,37 @@ public class UserInfo extends BaseEntity {
 	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private BankDetails bankDetails;
 
+    @Column(name = "last_attribution_time")
+    private LocalDateTime lastAttributionTime;//last attribution time column
+
+    
+//    @Column(name = "reattribution_time")
+//    private LocalDateTime reattributionTime;   // reattribution time Column
+//
+//	public LocalDateTime getReattributionTime() {
+//		return reattributionTime;
+//	}
+//
+//	public void setReattributionTime(LocalDateTime reattributionTime) {
+//		this.reattributionTime = reattributionTime;
+//	}
+
+	public LocalDateTime getLastAttributionTime() {
+		return lastAttributionTime;
+	}
+
+	public void setLastAttributionTime(LocalDateTime lastAttributionTime) {
+		this.lastAttributionTime = lastAttributionTime;
+	}
+
+	public String getClickId() {
+		return clickId;
+	}
+
+	public void setClickId(String clickId) {
+		this.clickId = clickId;
+	}
+	
 	
 	private String firstName;
 	private String fatherName;
@@ -68,10 +101,12 @@ public class UserInfo extends BaseEntity {
 //	private String creditProfile;
 	
 	@Column(name = "agent_id", length = 20)
-	 private Integer agentId;
+	 private Integer agentId;//DSA
 	    
    @Column(name = "agent", length = 30)
-   private String agent;
+   private String agent; //source
+   @Column(name = "click_id", length = 50)
+   private String clickId; //clickid 
    
    @Column(name = "sub_agent", length = 50)//sub dsa
    private String sub_agent;
@@ -206,6 +241,24 @@ public class UserInfo extends BaseEntity {
 	public void setAddress(String address) {
 		this.address = address;
 	}
+	
+    @Column(name = "registertime")
+    private LocalDateTime registerTime;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.registerTime == null) {
+            this.registerTime = super.getCreateTime(); // mirror createTime from BaseEntity
+        }
+    }
+    
+	public LocalDateTime getRegisterTime() {
+		return registerTime;
+	}
+
+	public void setRegisterTime(LocalDateTime registerTime) {
+		this.registerTime = registerTime;
+	}
 	public String getCompanyName() {
 		return companyName;
 	}
@@ -286,11 +339,22 @@ public class UserInfo extends BaseEntity {
 	}
 
 	public String getSub_agent() {
-		return sub_agent;
+		return sub_agent;//sub source
 	}
 
 	public void setSub_agent(String sub_agent) {
 		this.sub_agent = sub_agent;
+	}
+	
+	   @Column(name = "sub_agent_id", length = 30)
+	   private Integer subAgentId; // sub_dsa
+
+	   public Integer getSubAgentId() {
+		return subAgentId;
+	}
+
+	public void setSubAgentId(Integer subAgentId) {
+		this.subAgentId = subAgentId;
 	}
 
 	public String getSource() {

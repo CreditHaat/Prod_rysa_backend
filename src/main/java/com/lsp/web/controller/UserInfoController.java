@@ -150,7 +150,9 @@ public class UserInfoController {
             @RequestParam(required = false) String source,
             @RequestParam(required = false) String dsa,
             @RequestParam(required = false) String sub_dsa,
-
+            @RequestParam(required = false) String sub_source,
+            @RequestParam(required = false) String web_source,
+            @RequestParam(required = false) String clickId,
             @RequestParam(required = false) String channel
         ) {
             
@@ -168,6 +170,12 @@ public class UserInfoController {
             if (dto.getChannel() == null && channel != null) {
                 dto.setChannel(channel);
             }
+
+            if (dto.getClickId() == null && clickId != null) {
+
+            	  dto.setClickId(clickId);
+
+              }
             
             // Campaign already comes from frontend with complete query string
             // No need to process it here
@@ -382,17 +390,39 @@ public class UserInfoController {
                 payload.put("lastname", userInfo.getLastName());
                 payload.put("pan", userInfo.getPan());
 //                payload.put("gender", userInfo.getGender());
-                if(userInfo.getGender() == 1) {
-                	payload.put("gender", "male");
-                }else if(userInfo.getGender() == 2) {
-                	payload.put("gender", "female");
-                }else {
-                	payload.put("gender", "other");
+//                if(userInfo.getGender() == 1) {
+//                	payload.put("gender", "male");
+//                }else if(userInfo.getGender() == 2) {
+//                	payload.put("gender", "female");
+//                }else {
+//                	payload.put("gender", "other");
+//                }
+                if(userInfo.getGender()!=null) {
+                	if(userInfo.getGender() == 1) {
+                    	payload.put("gender", "male");
+                    }else if(userInfo.getGender() == 2) {
+                    	payload.put("gender", "female");
+                    }else {
+                    	payload.put("gender", "other");
+                    }
                 }
                 payload.put("addressline1", userInfo.getAddress());
                 payload.put("email", userInfo.getEmail());
                 payload.put("officeaddresspincode", userInfo.getWorkPincode());
-                payload.put("maritalstatus", userInfo.getMaritalStatus());
+//                payload.put("maritalstatus", userInfo.getMaritalStatus());
+                if(userInfo.getMaritalStatus() == null) {
+//                	payload.put("maritalstatus", userInfo.getMaritalStatus());
+                }else {
+                	if(userInfo.getMaritalStatus() == 1) {
+                    	payload.put("maritalstatus", "married");
+                    }else if(userInfo.getMaritalStatus() == 2) {
+                    	payload.put("maritalstatus", "unmarried");
+                    }else if(userInfo.getMaritalStatus() == 3) {
+                    	payload.put("maritalstatus", "divorced");
+                    }else if(userInfo.getMaritalStatus() == 4) {
+                    	payload.put("maritalstatus", "widowed");
+                    }
+                }
                 payload.put("company", userInfo.getCompanyName());
                 payload.put("agentid", agentId); // from @RequestParam
                 payload.put("agent", agent);     // from @RequestParam

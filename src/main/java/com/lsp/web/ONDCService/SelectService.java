@@ -30,17 +30,24 @@ import com.lsp.web.entity.Apply;
 import com.lsp.web.entity.Callback;
 import com.lsp.web.entity.JourneyLog;
 import com.lsp.web.entity.Logger;
+import com.lsp.web.entity.MIS;
 import com.lsp.web.entity.UserInfo;
 import com.lsp.web.repository.ApplyRepository;
 import com.lsp.web.repository.CallbackRepository;
 import com.lsp.web.repository.JourneyLogRepository;
 import com.lsp.web.repository.LoggerRepository;
+import com.lsp.web.repository.MISRepository;
 import com.lsp.web.repository.UserInfoRepository;
+import com.lsp.web.util.StringUtil;
 
 import ondc.onboarding.utility.Utils;
 
 @Service
 public class SelectService {
+	
+	@Autowired
+	private MISRepository misRepository;
+	
 	
 	@Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -260,6 +267,43 @@ public class SelectService {
         messagingTemplate.convertAndSend("/topic/callbacks/select/"+transactionId, callback);
         
         callbackRepository.save(callback);
+        //function to save the mis if user gets the offer from ondc======yogitas  code==============
+        Optional<MIS> optionalMis = misRepository.findByTransactionId(transactionId);
+        if(optionalMis.isPresent()) {
+        	String value = jsonNode.path("message").path("order").path("items").path(0).path("price").path("value").asText();
+        	String bppId = jsonNode.path("context").path("bpp_id").asText();
+        	if(value!=null && !StringUtil.nullOrEmpty(value)) {
+        		MIS mis = optionalMis.get();
+        		mis.setOfferFlag("1");
+//        		if(bppId.equalsIgnoreCase("app-gateway.paywithring.com")) {
+//        			mis.setKissht(value);
+//        		}else if(bppId.equalsIgnoreCase("pahal.ondcprod.ignosis.ai")) {
+//        			mis.setPahal(value);
+//        		}else if(bppId.equalsIgnoreCase("bfl.ondcprod.ignosis.ai")) {
+//        			mis.setBFL(value);
+//        		}else if(bppId.equalsIgnoreCase("api.adityabirlacapital.com")) {
+//        			mis.setABCL(value);
+//        		}else if(bppId.equalsIgnoreCase("api.abcscuat.com")) {
+//        			mis.setABCL(value);
+//        		}
+        		
+        		//for prod
+        		if(bppId.equalsIgnoreCase("app-gateway.paywithring.com")) {
+        			mis.setKissht(value);
+        		}else if(bppId.equalsIgnoreCase("pahal.ondcprod.ignosis.ai")) {
+        			mis.setPahal(value);
+        		}else if(bppId.equalsIgnoreCase("bfl.ondcprod.ignosis.ai")) {
+        			mis.setBFL(value);
+        		}else if(bppId.equalsIgnoreCase("api.adityabirlacapital.com")) {
+        			mis.setABCL(value);
+        		}else if(bppId.equalsIgnoreCase("aspirenbfc.in")) {
+        			mis.setAspireFin(value);
+        		}
+        		
+        		misRepository.save(mis);
+        		
+        	}
+        }
         
         try {
 			String NOresponse = txnLogService.pushTxnLogs("on_select", requestBody.toString());
