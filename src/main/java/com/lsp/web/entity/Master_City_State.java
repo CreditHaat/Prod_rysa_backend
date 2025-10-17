@@ -92,6 +92,7 @@ public class Master_City_State extends BaseEntity {
     private String BFL;
     private String CreditHaat;
     private String Pahal;
+	private String Aspire;
 
     // === GETTERS & SETTERS ===
 
@@ -179,6 +180,12 @@ public class Master_City_State extends BaseEntity {
 	}
 	public void setPahal(String pahal) {
 		Pahal = pahal;
+	}
+	public String getAspire() {
+		return Aspire;
+	}
+	public void setAspire(String aspire) {
+		Aspire = aspire;
 	}
     
     

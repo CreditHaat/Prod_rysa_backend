@@ -92,7 +92,7 @@ public class MISExportService {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             // Header
             writer.write(
-                    "\"id\",\"mobileNumber\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\",\"journeyFlag\",\"breFlag\",\"productFlag\",\"pahal\",\"kissht\",\"BFL\",\"ABCL\",\"aspireFin\",\"status\",\"offerFlag\",\"cancelFlag\",\"createTime\"\n"
+                    "\"id\",\"mobileNumber\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\",\"journeyFlag\",\"breFlag\",\"productFlag\",\"pahal\",\"kissht\",\"BFL\",\"ABCL\",\"aspireFin\",\"primeFlag\",\"status\",\"offerFlag\",\"cancelFlag\",\"createTime\"\n"
 
 //                "\"id\",\"mobileNumber\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\",\"journeyFlag\",\"breFlag\",\"productFlag\",\"pahal\",\"kissht\",\"BFL\",\"ABCL\",\"aspireFin\",\"status\",\"offerFlag\",\\\"cancelFlag\\\",\"createTime\"\n"
             );
@@ -114,6 +114,7 @@ public class MISExportService {
                         csvSafe(record.getBFL()) + "," +
                         csvSafe(record.getABCL()) + "," +
                         csvSafe(record.getAspireFin()) + "," +
+                        csvSafe(record.getPrimeFlag()) + "," + // prime flag added
                         csvSafe(record.getStatus()) + "," +
                         csvSafe(record.getOfferFlag()) + "," +
                         csvSafe(record.getCancelFlag())+","+
@@ -302,7 +303,7 @@ public class MISExportService {
             // Create message
             MimeMessage message = new MimeMessage(session);
             message.setFrom(new InternetAddress(username));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("yogitatekale1911@gmail.com"));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("shital.more@credithaat.com"));
             message.setSubject("CreditHaat MIS");
             message.setText("Hello,\n\nThe daily MIS CSV report has been uploaded to S3.\n\n" +
                   "You can download it from the following link:\n" + s3FileUrl + "\n\nBest regards,\nMIS System");
@@ -310,7 +311,7 @@ public class MISExportService {
             // Send email
             Transport.send(message);
 
-            System.out.println("Email sent successfully to yogitatekale1911@gmail.com");
+            System.out.println("Email sent successfully to shital.more@credithaat.com");
 
         } catch (MessagingException e) {
             System.err.println("Failed to send email: " + e.getMessage());

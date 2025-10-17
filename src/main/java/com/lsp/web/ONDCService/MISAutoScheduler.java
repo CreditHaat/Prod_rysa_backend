@@ -1,10 +1,12 @@
 package com.lsp.web.ONDCService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("prod") //  Only active when spring.profiles.active=prod
 public class MISAutoScheduler {
 
     @Autowired
