@@ -21,11 +21,14 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 public class S3UploaderService {
 
 	//here removing this just to push on git
-	private final String accessKey = "";
+    private final String accessKey = "";
     private final String secretKey = "";
     private final String bucketName = "ch-analysis-bucket";
     private final String region = "ap-south-1";
-    private final String folderPrefix = "MIS/";
+    // private final String folderPrefix = "MIS/"; //========>preprod or testing
+    
+    private final String folderPrefix = "LIVE_MIS_PROD/";//====>live s3 bucket
+
 
     public String uploadFileToS3(File file) {
         try {
