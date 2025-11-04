@@ -452,6 +452,173 @@ public class UserInfoController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Something went wrong");
             }
         }
+
+         @CrossOrigin(origins = "*")
+        @PostMapping("/digitapapi")
+        public ResponseEntity<ApiResponse> digitapApi(@RequestBody Map<String, Object> payload) {
+            try {
+                UserInfoDto dto = new UserInfoDto();
+                dto.setMobileNumber(Objects.toString(payload.get("Mobilenumber"), ""));
+                dto.setPan(Objects.toString(payload.get("pan"), ""));
+
+                // Call external Digitap API
+                JSONObject apiResponse = userInfoService.callDigitapAryseFinApi(dto);
+                String responseString = apiResponse.toString();
+
+                // ✅ Extract data
+                JSONObject result = apiResponse.optJSONObject("result");
+                if (result != null && result.has("uan_details")) {
+                    JSONObject uanDetails = result.optJSONObject("uan_details");
+
+                    if (uanDetails != null && uanDetails.keys().hasNext()) {
+                        String uanKey = (String) uanDetails.keys().next();
+                        JSONObject details = uanDetails.optJSONObject(uanKey);
+
+                        if (details != null) {
+                            JSONObject basic = details.optJSONObject("basic_details");
+                            JSONObject employment = details.optJSONObject("employment_details");
+
+                            String name = basic != null ? basic.optString("name", "") : "";
+                            String dob = basic != null ? basic.optString("date_of_birth", "") : "";
+                            String gender = basic != null ? basic.optString("gender", "") : "";
+                            String establishmentName = employment != null ? employment.optString("establishment_name", "") : "";
+
+                            if (!name.isEmpty()) {
+                                // ✅ Find existing user (by mobile or PAN)
+                                Optional<UserInfo> existingOpt = Optional.empty();
+
+                                if (dto.getMobileNumber() != null && !dto.getMobileNumber().isEmpty()) {
+                                    existingOpt = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
+                                }
+
+                                if (existingOpt.isPresent()) {
+                                    UserInfo user = existingOpt.get();
+
+                                    // ✅ Update existing record only
+                                    user.setPanName(name);
+                                    user.setDob(dob);
+                                    user.setGender("MALE".equalsIgnoreCase(gender) ? 1 :
+                                                   "FEMALE".equalsIgnoreCase(gender) ? 2 : 3);
+                                    user.setCompanyName(establishmentName);
+                                    user.setActive(1); // ✅ ensure active user
+                                    userInfoRepository.save(user);
+                                } else {
+                                    // Optional: Skip or create new (depending on requirement)
+                                    System.out.println("⚠️ No existing user found for Mobile/PAN, skipping update.");
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ✅ Prepare API response
+                ApiResponse response = new ApiResponse();
+                response.setCode(200);
+                response.setMsg(responseString);
+                return ResponseEntity.ok(response);
+
+            } catch (Exception e) {
+                ApiResponse error = new ApiResponse();
+                error.setCode(500);
+                error.setMsg("Error calling Digitap API: " + e.getMessage());
+                return ResponseEntity.status(500).body(error);
+            }
+        }
+
+
+        @CrossOrigin(origins = "*")
+        @PostMapping("/digitappanapi")
+        public ResponseEntity<ApiResponse> digitapPanApi(@RequestBody Map<String, Object> payload) {
+            try {
+                // Map payload to DTO
+                UserInfoDto dto = new UserInfoDto();
+                dto.setPan(Objects.toString(payload.get("pan"), ""));
+                dto.setMobileNumber(Objects.toString(payload.get("Mobilenumber"), "")); // add mobile if available
+
+                // Call the external PAN API
+                JSONObject apiResponse = userInfoService.callDigitapPanAryseFinApi(dto);
+                String responseString = apiResponse.toString();
+                
+                int httpCode = apiResponse.optInt("http_response_code", 0);
+                if (httpCode != 200) {
+                    System.out.println("❌ PAN API returned error: " + apiResponse.optString("error", "Unknown error"));
+                    
+                    // Return the response but don't save blank values in DB
+                    ApiResponse errorResponse = new ApiResponse();
+                    errorResponse.setCode(httpCode);
+                    errorResponse.setMsg(responseString);
+                    return ResponseEntity.status(httpCode).body(errorResponse);
+                }
+
+                // ✅ Extract and save PAN details
+                JSONObject result = apiResponse.optJSONObject("result");
+                if (result != null) {
+                    String fullName = result.optString("fullname", "");
+                    String dob = result.optString("dob", "");
+                    String gender = result.optString("gender", "");
+                    
+                    if (fullName.isEmpty() && dob.isEmpty() && gender.isEmpty()) {
+//                        System.out.println("⚠️ PAN API returned 200 but no valid data. Skipping DB update.");
+                        ApiResponse emptyResponse = new ApiResponse();
+                        emptyResponse.setCode(204);
+                        emptyResponse.setMsg("No valid PAN details found in API response: " + responseString);
+                        return ResponseEntity.status(200).body(emptyResponse);
+                    }
+                    
+                    String formattedDob = null;
+                    if (dob != null && !dob.isEmpty()) {
+                        try {
+                            DateTimeFormatter inputFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                            DateTimeFormatter outputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                            LocalDate date = LocalDate.parse(dob, inputFormat);
+                            formattedDob = date.format(outputFormat);
+                        } catch (Exception e) {
+                            System.err.println("⚠️ DOB format conversion failed for value: " + dob);
+                        }
+                    }
+
+                    // Try to find user by mobile or PAN
+                    Optional<UserInfo> existingOpt = Optional.empty();
+
+                    if (dto.getMobileNumber() != null && !dto.getMobileNumber().isEmpty()) {
+                        existingOpt = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
+                    }
+
+//                    if (existingOpt.isEmpty() && dto.getPan() != null && !dto.getPan().isEmpty()) {
+//                        existingOpt = userInfoRepository.findByPan(dto.getPan().trim());
+//                    }
+
+                    UserInfo user = existingOpt.orElse(new UserInfo()); // create new if not found
+
+                    // Update fields
+                    if (!fullName.isEmpty()) user.setPanName(fullName);
+                    if (formattedDob != null) user.setDob(formattedDob);
+                    if (!gender.isEmpty()) {
+                        user.setGender("male".equalsIgnoreCase(gender) ? 1 :
+                                       "female".equalsIgnoreCase(gender) ? 2 : 3);
+                    }
+                    if (dto.getPan() != null && !dto.getPan().isEmpty()) user.setPan(dto.getPan());
+                    if (dto.getMobileNumber() != null && !dto.getMobileNumber().isEmpty()) user.setMobileNumber(dto.getMobileNumber());
+                    user.setActive(1);
+
+                    userInfoRepository.save(user);
+                }
+
+                // Prepare final API response
+                ApiResponse response = new ApiResponse();
+                response.setCode(200);
+                response.setMsg(responseString);
+
+                return ResponseEntity.status(response.getCode()).body(response);
+
+            } catch (Exception e) {
+                ApiResponse error = new ApiResponse();
+                error.setCode(500);
+                error.setMsg("Error calling Digitap PAN API: " + e.getMessage());
+                return ResponseEntity.status(500).body(error);
+            }
+        }
+
 	
 	
 }	

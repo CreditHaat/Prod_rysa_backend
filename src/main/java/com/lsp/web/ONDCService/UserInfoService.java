@@ -1522,6 +1522,68 @@ public class UserInfoService {
 		}catch(Exception ex) {}
    }
 	
+	public JSONObject callDigitapAryseFinApi(UserInfoDto dto) {
+	    try {
+	        // ✅ Use your local Credithaat API endpoint
+//	        String url = "http://localhost/uan";
+	    	String url = "https://loan.credithaat.com/uan";
+
+	        // ✅ Build full URL with query parameters
+	        String fullUrl = url + "?pan=" + dto.getPan() + "&mobile=" + dto.getMobileNumber();
+
+	        // ✅ Use RestTemplate GET call
+	        RestTemplate restTemplate = new RestTemplate();
+	        ResponseEntity<String> response = restTemplate.getForEntity(fullUrl, String.class);
+
+	        // ✅ Parse response into JSON
+	        JSONObject respJson = new JSONObject(response.getBody());
+
+	        return respJson;
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        try {
+	            JSONObject error = new JSONObject();
+	            error.put("error", "Digitap API call failed: " + e.getMessage());
+	            return error;
+	        } catch (org.json.JSONException jsonEx) {
+	            jsonEx.printStackTrace();
+	            return null;
+	        }
+	    }
+	}
+	
+	public JSONObject callDigitapPanAryseFinApi(UserInfoDto dto) {
+	    try {
+	        // ✅ Use your local Credithaat API endpoint
+//	        String url = "http://localhost/pan";
+	        String url = "https://loan.credithaat.com/pan";
+
+	        // ✅ Build full URL with query parameters
+//	        String fullUrl = url + "?pan=" + dto.getPan();
+	        String fullUrl = url + "?pan=" + dto.getPan() + "&mobile=" + dto.getMobileNumber();
+
+	        // ✅ Use RestTemplate GET call
+	        RestTemplate restTemplate = new RestTemplate();
+	        ResponseEntity<String> response = restTemplate.getForEntity(fullUrl, String.class);
+
+	        // ✅ Parse response into JSON
+	        JSONObject respJson = new JSONObject(response.getBody());
+
+	        return respJson;
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        try {
+	            JSONObject error = new JSONObject();
+	            error.put("error", "Digitap API call failed: " + e.getMessage());
+	            return error;
+	        } catch (org.json.JSONException jsonEx) {
+	            jsonEx.printStackTrace();
+	            return null;
+	        }
+	    }
+	}
 
 
 }
