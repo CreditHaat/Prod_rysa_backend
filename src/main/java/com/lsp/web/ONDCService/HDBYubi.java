@@ -187,7 +187,7 @@ public class HDBYubi {
 //            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" 
 //                          + clientLoanId + "/get_status";
             
-            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + clientLoanId + "/get_status";
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans/" + clientLoanId + "/get_status";
 
             RestTemplate restTemplate = new RestTemplate();
 
@@ -455,7 +455,7 @@ public class HDBYubi {
 
 //            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
 
-            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + client_loan_id;
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.PUT,
@@ -551,7 +551,7 @@ public class HDBYubi {
             RestTemplate restTemplate = new RestTemplate();
 //            String url = "https://uapi-uat.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
 
-            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + client_loan_id;
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.PUT,
@@ -579,7 +579,7 @@ public class HDBYubi {
 //            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/"
 //                    + client_loan_id + "/documents?document_types=kfs_doc&agreement_id=VIBHUP_CHDB_PL_DLP";
 
-            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/"
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans/"
                     + client_loan_id + "/documents?document_types=kfs_doc&agreement_id=VIBHUP_CHDB_PL_DLP_1";
 
             RestTemplate restTemplate = new RestTemplate();
@@ -617,7 +617,7 @@ public class HDBYubi {
 //            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/"
 //                    + client_loan_id + "/documents?document_types=loan_agreement_doc&agreement_id=VIBHUP_CHDB_PL_DLP";
 
-            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/"
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans/"
                     + client_loan_id + "/documents?document_types=loan_agreement_doc&agreement_id=VIBHUP_CHDB_PL_DLP_1";
 
             RestTemplate restTemplate = new RestTemplate();
@@ -827,7 +827,7 @@ public class HDBYubi {
         try {
 //            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + clientLoanId + "/agreement_signed";
 
-            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + clientLoanId + "/agreement_signed";
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans/" + clientLoanId + "/agreement_signed";
 
             RestTemplate restTemplate = new RestTemplate();
 

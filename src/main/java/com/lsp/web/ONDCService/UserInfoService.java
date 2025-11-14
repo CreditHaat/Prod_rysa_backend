@@ -1067,6 +1067,106 @@ public class UserInfoService {
 	}
 
 	// ================= Page 4 =========================================
+	public UserInfoDto saveOrUpdatePage4(UserInfoDto dto) {
+		System.out.println("Incoming Page4 request for mobile: " + dto.getMobileNumber());
+		System.out.println("CompanyName: " + dto.getCompanyName());
+		System.out.println("WorkEmail: " + dto.getWorkEmail());
+		System.out.println("WorkPincode: " + dto.getWorkPincode());
+
+		UserInfo user = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim())
+				.orElseThrow(() -> new RuntimeException("Mobile not found"));
+
+		if (dto.getCompanyName() != null)
+			user.setCompanyName(dto.getCompanyName());
+		if (dto.getWorkEmail() != null)
+			user.setWorkEmail(dto.getWorkEmail());
+		if (dto.getWorkPincode() != null)
+			user.setWorkPincode(dto.getWorkPincode());
+		if (dto.getFatherName() != null && !dto.getFatherName().trim().isEmpty()) {
+	        String fatherInput = dto.getFatherName().trim();
+	        String[] fatherParts = fatherInput.split("\\s+");
+	        user.setFatherName(fatherParts[0]);
+	    }
+		if (dto.getMaritalStatus() != null)
+			user.setMaritalStatus(dto.getMaritalStatus());
+		if (dto.getMaritalStatus() != null && dto.getMaritalStatus() == 1 && dto.getSpouseName() != null) {
+		    user.setSpouseName(dto.getSpouseName());
+		} else {
+		    user.setSpouseName(null);
+		}
+
+		userInfoRepository.save(user);
+		//// ===================== Update MIS =====================
+//      MIS mis = misRepository.findByMobileNumber(dto.getMobileNumber())
+//              .orElseThrow(() -> new RuntimeException("MIS entry not found"));
+//
+//      // Set journeyFlag as Completed after page4
+//      mis.setJourneyFlag("Completed");
+//      
+//   // ----------------- Set Prime Flag -----------------
+//      Float salary = user.getMonthlyIncome();             // Page2
+//      Integer profession = user.getEmploymentType();      // 1 = salaried
+//      String creditProfileStr = user.getCreditProfile();  // Page3 score (String)
+//   // Initialize upfront
+//      String primeFlag = null; 
+//
+//      if (creditProfileStr != null) {
+//          int creditProfile = Integer.parseInt(creditProfileStr);
+//
+//          if (creditProfile == 1000) {
+//              primeFlag = "NTC";
+//          } else if (creditProfile >= 720 && salary >= 35000 && profession == 1) {
+//              primeFlag = "YES";
+//          } else {
+//              primeFlag = "NO";
+//          }
+//      }
+//
+//      // Save primeFlag in MIS
+//      mis.setPrimeFlag(primeFlag); // Safe, always initialized
+
+//
+//      misRepository.save(mis);
+//=====================================================================================
+	    // ------------------ MIS Handling ------------------
+		List<MIS> misList = misRepository.findAllByMobileNumberOrderByCreateTimeDesc(dto.getMobileNumber());
+		MIS mis = null;
+
+		for (MIS m : misList) {
+		    if (!"cancel".equalsIgnoreCase(m.getCancelFlag())) {
+		        mis = m;
+		        break;
+		    }
+		}
+
+		if (mis == null) {
+		    throw new RuntimeException("No active MIS found for this user");
+		}
+
+		// Update Page 4 flags
+		mis.setJourneyFlag("Completed");
+
+		Float salary = user.getMonthlyIncome();
+		Integer profession = user.getEmploymentType();
+		String creditProfileStr = user.getCreditProfile();
+
+		String primeFlag = null;
+		if (creditProfileStr != null) {
+		    int creditProfile = Integer.parseInt(creditProfileStr);
+		    if (creditProfile == 1000) {
+		        primeFlag = "NTC";
+		    } else if (creditProfile >= 720 && salary >= 35000 && profession == 1) {
+		        primeFlag = "YES";
+		    } else {
+		        primeFlag = "NO";
+		    }
+		}
+
+		mis.setPrimeFlag(primeFlag);
+		misRepository.save(mis);
+		
+	    return buildDto(user);
+	}
 
 		
 //		return buildDto(user);

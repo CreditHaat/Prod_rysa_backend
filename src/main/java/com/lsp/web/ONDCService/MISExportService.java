@@ -18,7 +18,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
+import com.lsp.web.entity.Agent;
+import com.lsp.web.repository.AgentRepository;
 
 
 import org.springframework.mail.SimpleMailMessage;
@@ -32,6 +33,9 @@ public class MISExportService {
 
     @Autowired
     private MISRepository misRepository;
+
+    @Autowired
+    private AgentRepository agentRepository;
 
     @Autowired
     private S3UploaderService s3UploaderService;
