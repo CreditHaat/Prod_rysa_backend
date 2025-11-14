@@ -94,6 +94,7 @@ import com.lsp.web.entity.JourneyLog;
 import com.lsp.web.entity.Logger;
 import com.lsp.web.entity.MasterBank;
 import com.lsp.web.entity.Master_City_State;
+import com.lsp.web.entity.Product;
 import com.lsp.web.entity.ReferenceDetails;
 import com.lsp.web.entity.SanctionDetails;
 import com.lsp.web.entity.UserInfo;
@@ -105,6 +106,7 @@ import com.lsp.web.repository.JourneyLogRepository;
 import com.lsp.web.repository.LoggerRepository;
 import com.lsp.web.repository.MasterBankRepository;
 import com.lsp.web.repository.MasterCityStateRepository;
+import com.lsp.web.repository.ProductRepository;
 import com.lsp.web.repository.ReferenceDetailsRepository;
 import com.lsp.web.repository.SanctionDetailsRepository;
 import com.lsp.web.util.ObjResponse;
@@ -141,6 +143,12 @@ public class HDBController {
 	
 	@Autowired
 	private MasterBankRepository masterBankRepository;
+	
+//	@Autowired
+//	private Product product;
+	
+	@Autowired
+	private ProductRepository productRepository;
 
 	
 	@GetMapping("/createuid")
@@ -439,7 +447,8 @@ public class HDBController {
         	requestPayload.put("monthly_income", user.getMonthlyIncome());
         	requestPayload.put("marital_status", user.getMaritalStatus());
         	requestPayload.put("pan", user.getPan());
-        	requestPayload.put("loan_amount", user.getLoanAmount());
+//        	requestPayload.put("loan_amount", user.getLoanAmount());
+        	requestPayload.put("loan_amount", 100000);
         	requestPayload.put("email", user.getEmail());
 
         	JourneyLog journeyLog = new JourneyLog();
@@ -474,7 +483,8 @@ public class HDBController {
         		    user.getMaritalStatus(),        // Integer (1-4)
         		    user.getMobileNumber(),                           // String (again for phone field)
         		    user.getPan(),                                    // String
-        		    user.getLoanAmount(),           // Float
+//        		    user.getLoanAmount(),           // Float
+        		    100000f,
         		    user.getEmail()          
             );
 
@@ -510,10 +520,13 @@ public class HDBController {
 
         	if (user != null) {
         		String productName = "HDB"; // or use dynamic value
-        	    Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+        		Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+        	    Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
                 apply.setUrl("");
                 apply.setJourneyLog(journeyLog);  // ✅ set FK
@@ -791,10 +804,13 @@ public class HDBController {
 
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
 //                apply.setUrl("http://localhost:3000/yubi/YubiSteps?client_loan_id=" + clientLoanId);
                 apply.setUrl(redirectionUrl);
@@ -986,10 +1002,13 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
                 apply.setUrl("");
                 apply.setJourneyLog(stage3Log);  // ✅ set FK
@@ -1139,10 +1158,13 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
 //                apply.setUrl("http://localhost:3000/yubi/Selfiepage?client_loan_id=" + clientLoanId);
                 apply.setUrl(redirectUrl);
@@ -1253,12 +1275,15 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
-                apply.setUrl("http://localhost:3000/yubi/Loanapprovalpage?client_loan_id=" + clientLoanId);            
+                apply.setUrl("https://www.arysefin.com/yubi/Loanapprovalpage?client_loan_id=" + clientLoanId);            
                 apply.setJourneyLog(previousLog);  // ✅ set FK
                 apply.setStage(journeyLog.getStage());
                 apply.setUpdateTime(LocalDateTime.now());
@@ -1298,19 +1323,23 @@ public class HDBController {
         public Map<String, Object> generatePresignedUrl(@RequestParam String fileName) {
             Map<String, Object> response = new HashMap<>();
             try {
-                String bucketName = "shitaltestinsight";
-                String folderName = "selfies";  // Optional: subfolder to keep things organized
+//                String bucketName = "shitaltestinsight";  // for uat
+                String bucketName = "imagesforhdb";        // for live
+                String folderName = "selfies";
                 String objectKey = folderName + "/" + fileName;
 
                 // ⏳ Presigned URL valid for 5 minutes
                 Date expiration = new Date(System.currentTimeMillis() + 5 * 60 * 1000);
 
                 // ✅ Your credentials
+//                AWSCredentials credentials = new BasicAWSCredentials(
+//                    "xyz",  
+//                    "abc"   
+//                );
                 AWSCredentials credentials = new BasicAWSCredentials(
-                    "xyz",  // Replace with your Access Key
-                    "abc"   // Replace with your Secret Key
-                );
-
+                        "",
+                        ""
+                    );
                 AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                         .withCredentials(new AWSStaticCredentialsProvider(credentials))
                         .withRegion("ap-south-1")
@@ -1449,12 +1478,15 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
-                apply.setUrl("http://localhost:3000/yubi/Referencedetailspage?client_loan_id=" + clientLoanId);
+                apply.setUrl("https://www.arysefin.com/yubi/Referencedetailspage?client_loan_id=" + clientLoanId);
                 apply.setJourneyLog(previousLog);  // ✅ set FK
                 apply.setStage(journeyLog.getStage());
                 apply.setUpdateTime(LocalDateTime.now());
@@ -1653,12 +1685,15 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
-                apply.setUrl("http://localhost:3000/yubi/Finalsanctiondetails?client_loan_id=" + clientLoanId);
+                apply.setUrl("https://www.arysefin.com/yubi/Finalsanctiondetails?client_loan_id=" + clientLoanId);
                 apply.setJourneyLog(previousLog);  // ✅ set FK
                 apply.setStage(journeyLog.getStage());
                 apply.setUpdateTime(LocalDateTime.now());
@@ -1778,12 +1813,15 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
-                apply.setUrl("http://localhost:3000/yubi/Waitingpageloanagreement?client_loan_id=" + clientLoanId);
+                apply.setUrl("https://www.arysefin.com/yubi/Waitingpageloanagreement?client_loan_id=" + clientLoanId);
                 apply.setJourneyLog(previousLog);  // ✅ set FK
                 apply.setStage(journeyLog.getStage());
                 apply.setUpdateTime(LocalDateTime.now());
@@ -1867,10 +1905,13 @@ public class HDBController {
             
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
                 apply.setUrl("");
                 apply.setJourneyLog(previousLog);  // ✅ set FK
@@ -1989,12 +2030,21 @@ public class HDBController {
             logger.setUrl(redirectUrl);
             LoggerRepository.save(logger);
             
+//String redirectUrl= null;
+//            
+//            if (redirectUrl == null || redirectUrl.isEmpty()) {
+//                redirectUrl = "https://www.google.com"; 
+//            }
+            
             if (user != null) {
             	String productName = "HDB"; // or use dynamic value
-                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            	Product product = productRepository.findByProductName(productName)
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+                Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
                 Apply apply = existingApply.orElse(new Apply());
                 apply.setUser(user);
-                apply.setProductName("HDB"); // Replace with actual product name
+                apply.setProductName(product.getProductName()); // Replace with actual product name
                 apply.setMobileNumber(user.getMobileNumber());
 //                apply.setUrl("http://localhost:3000/yubi/Agreementcompleted?client_loan_id=" + clientLoanId);
                 apply.setUrl(redirectUrl);
@@ -2004,14 +2054,6 @@ public class HDBController {
                 if (apply.getCreateTime() == null) apply.setCreateTime(LocalDateTime.now());
                 applyRepository.save(apply);
             }
-
-            // ✅ Save new JourneyLog for Stage 8
-//            JourneyLog journeyLog = new JourneyLog();
-//            journeyLog.setStage(11);
-//            journeyLog.setUId(clientLoanId);
-//            journeyLog.setUser(user);
-//            journeyLog.setPlatformId("Y");
-//            journeyLogRepository.save(journeyLog);
 
 
             // ✅ Return success
@@ -2144,13 +2186,22 @@ public class HDBController {
             logger.setResponsePayload(result.get("responsePayload").toString());
             logger.setUrl(redirectUrl);
             LoggerRepository.save(logger);
+            
+//String redirectUrl= null;
+//            
+//            if (redirectUrl == null || redirectUrl.isEmpty()) {
+//                redirectUrl = "https://www.google.com"; 
+//            }
 
             // ✅ Update Apply Table
             String productName = "HDB"; // or use dynamic value
-            Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            Product product = productRepository.findByProductName(productName)
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+            Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
             Apply apply = existingApply.orElse(new Apply());
             apply.setUser(user);
-            apply.setProductName("HDB");
+            apply.setProductName(product.getProductName());
             apply.setMobileNumber(user.getMobileNumber());
             apply.setUrl(redirectUrl);
             apply.setJourneyLog(previousLog);  // ✅ set FK
@@ -2158,14 +2209,6 @@ public class HDBController {
             apply.setUpdateTime(LocalDateTime.now());
             if (apply.getCreateTime() == null) apply.setCreateTime(LocalDateTime.now());
             applyRepository.save(apply);
-
-            // ✅ Save new JourneyLog for Stage 12 (Mandate)
-//            JourneyLog journeyLog = new JourneyLog();
-//            journeyLog.setStage(12);
-//            journeyLog.setUId(clientLoanId);
-//            journeyLog.setUser(user);
-//            journeyLog.setPlatformId("Y");
-//            journeyLogRepository.save(journeyLog);
 
             // ✅ Respond
             resp.setCode(0);
@@ -2234,12 +2277,19 @@ public class HDBController {
                 resp.setMsg("Mandate status check failed");
                 return resp;
             }
+            
+//            JSONObject result = new JSONObject();
+//            result.put("status", "SUCCESS");
+//            result.put("mandate_reference_id", "MND1234567890");
 
             String productName = "HDB"; // or use dynamic value
-            Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            Product product = productRepository.findByProductName(productName)
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+            Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
             Apply apply = existingApply.orElse(new Apply());
             apply.setUser(user);
-            apply.setProductName("HDB");
+            apply.setProductName(product.getProductName());
             apply.setMobileNumber(user.getMobileNumber());
             apply.setUrl("");
             apply.setJourneyLog(previousLog);  // ✅ set FK
@@ -2317,12 +2367,21 @@ public class HDBController {
                 resp.setMsg("Agreement signing failed");
                 return resp;
             }
+            
+//            JSONObject result = new JSONObject();
+//            result.put("status", "SUCCESS");
+//            result.put("agreement_url", "https://mockagreement.com/signed");
+//            result.put("timestamp", LocalDateTime.now().toString());
+
 
             String productName = "HDB"; // or use dynamic value
-            Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, productName);
+            Product product = productRepository.findByProductName(productName)
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + productName));
+
+            Optional<Apply> existingApply = applyRepository.findByUserAndProductName(user, product.getProductName());
             Apply apply = existingApply.orElse(new Apply());
             apply.setUser(user);
-            apply.setProductName("HDB");
+            apply.setProductName(product.getProductName());
             apply.setMobileNumber(user.getMobileNumber());
             apply.setUrl("");
             apply.setJourneyLog(previousLog);  // ✅ set FK

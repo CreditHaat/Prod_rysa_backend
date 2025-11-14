@@ -27,6 +27,17 @@ public class MIS extends BaseEntity {
     @Column(name = "transaction_id", length = 200)
     private String transactionId;
 
+  @Column(name = "agent_id", length = 20)
+	 private Integer agentId;//DSA
+
+    
+    public Integer getAgentId() {
+		return agentId;
+	}
+
+	public void setAgentId(Integer agentId) {
+		this.agentId = agentId;
+	}
     
     @Column(length = 100)
     private String clickId;
@@ -99,6 +110,16 @@ public class MIS extends BaseEntity {
     @Column(length = 50)
     private String ABCL;
 
+    @Column(length = 50)
+    private String HDB;
+
+    public String getHDB() {
+		return HDB;
+	}
+
+	public void setHDB(String hDB) {
+		HDB = hDB;
+	}
     @Column(length = 50)
     private String aspireFin;
 

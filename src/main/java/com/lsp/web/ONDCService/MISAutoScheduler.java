@@ -35,4 +35,20 @@ public class MISAutoScheduler {
             System.err.println("2:30 PM MIS report failed: " + e.getMessage());
         }
     }
+
+        // Run every day at 9:00 AM (India time)
+    @Scheduled(cron = "0 0 9 * * ?", zone = "Asia/Kolkata")
+    public void generateAgentReport() {
+        try {
+            System.out.println("Starting 9 AM Agent MIS batch...");
+
+            misExportService.generateAndSendMISForAllAgents();  // 🔹 Call the multi-agent method
+
+            System.out.println("9 AM Agent MIS batch completed successfully!");
+        } catch (Exception e) {
+            System.err.println("9 AM Agent MIS batch failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }

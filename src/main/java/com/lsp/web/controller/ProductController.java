@@ -1204,4 +1204,153 @@ public class ProductController {
 
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/getHdbProduct")
+	public ResponseEntity<?> getHDBProduct(@RequestParam String mobile) {
+		try {
+
+			UserInfo globalUserInfo;
+			Optional<UserInfo> optionalUserInfo1 = userinfoRepository.findByMobileNumber(mobile);
+			if (optionalUserInfo1.isEmpty()) {
+//				return null;
+				return ResponseEntity.noContent().build();
+			}
+
+			globalUserInfo = optionalUserInfo1.get();
+
+//			if(!globalUserInfo.getCreditProfile().equals("1000")) {
+			if (!"1000".equals(globalUserInfo.getCreditProfile())) {
+
+				// here we will check the bre
+				ResponseEntity<Map<String, Object>> response = checkBREONDC(mobile);
+				if (response.getStatusCode().value() == 200) {
+
+					Map<String, Object> body = response.getBody();
+					if (body != null) {
+						Boolean status = (Boolean) body.get("status");
+						String reason = (String) body.get("reason");
+
+						if (Boolean.FALSE.equals(status)) {
+							System.out.println("Error: " + reason);
+
+//				             Optional<Product> chproduct = productRepository.findByProductName("CreditHaat");
+//				             if(chproduct.isPresent()) {
+//				            	 List<Product> finalList = new ArrayList();
+//					             finalList.add(chproduct.get());
+//					             return ResponseEntity.ok(finalList);
+//				             }
+
+//							return null;
+							return ResponseEntity.noContent().build();
+
+						} else {
+							// Inside after passing bre
+							Optional<Product> optionalProduct = productRepository.findByProductName("HDB");
+							if(optionalProduct.isEmpty()) {
+//								return null;
+								return ResponseEntity.noContent().build();
+							}
+							
+							Product product = optionalProduct.get();
+							if(product.getStatus() == 1) {
+//								return null;
+								return ResponseEntity.noContent().build();
+							}
+							
+							Optional<UserInfo> optionalUser = userinfoRepository.findByMobileNumber(mobile);
+							if(optionalUser.isEmpty()) {
+//								return null;
+								return ResponseEntity.noContent().build();
+							}
+							
+							UserInfo userInfo = optionalUser.get();
+							
+							String partner = product.getProductName();
+							String profession = null;
+							if (userInfo.getEmploymentType() == 1) {
+//					        	ondcFormDataDTO.setEmploymentType("Salaried");
+								profession = "salaried";
+							} else if (userInfo.getEmploymentType() == 2) {
+								profession = "Self Employed";
+							} else if (userInfo.getEmploymentType() == 3) {
+								profession = "Business";// as ondc form has only two fields salaried and
+																						// self employed otherwise here would be
+																						// Business
+							}
+							
+
+//							String paymentType = null;
+							int paymentType = userInfo.getPaymentType();
+							float income = userInfo.getMonthlyIncome();
+							String pincode = String.valueOf(userInfo.getResidentialPincode());
+							String company = userInfo.getCompanyName();
+							
+							Product sortedProduct = productService.productInfoList(mobile, partner, profession, paymentType, income, pincode);
+							
+							if(sortedProduct!=null) {
+								return ResponseEntity.ok(sortedProduct);
+							}
+
+
+						}
+					}
+				}
+
+			} else {
+
+				// here we will not check the bre as the user is New To Credit (NTC)
+				Optional<Product> optionalProduct = productRepository.findByProductName("HDB");
+				if(optionalProduct.isEmpty()) {
+//					return null;
+					return ResponseEntity.noContent().build();
+				}
+				
+				Product product = optionalProduct.get();
+				if(product.getStatus() == 1) {
+//					return null;
+					return ResponseEntity.noContent().build();
+				}
+				
+				Optional<UserInfo> optionalUser = userinfoRepository.findByMobileNumber(mobile);
+				if(optionalUser.isEmpty()) {
+//					return null;
+					return ResponseEntity.noContent().build();
+				}
+				
+				UserInfo userInfo = optionalUser.get();
+				
+				String partner = product.getProductName();
+				String profession = null;
+				if (userInfo.getEmploymentType() == 1) {
+//		        	ondcFormDataDTO.setEmploymentType("Salaried");
+					profession = "salaried";
+				} else if (userInfo.getEmploymentType() == 2) {
+					profession = "Self Employed";
+				} else if (userInfo.getEmploymentType() == 3) {
+					profession = "Business";// as ondc form has only two fields salaried and
+																			// self employed otherwise here would be
+																			// Business
+				}
+				
+
+//				String paymentType = null;
+				int paymentType = userInfo.getPaymentType();
+				float income = userInfo.getMonthlyIncome();
+				String pincode = String.valueOf(userInfo.getResidentialPincode());
+				String company = userInfo.getCompanyName();
+				
+				Product sortedProduct = productService.productInfoList(mobile, partner, profession, paymentType, income, pincode);
+				
+				if(sortedProduct!=null) {
+					return ResponseEntity.ok(sortedProduct);
+				}
+
+
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return ResponseEntity.noContent().build();
+	}
 }

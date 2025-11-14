@@ -14,156 +14,6 @@ import java.util.*;
 public class HDBYubi {
 
     public static String client_loan_id;
-    
-//    public static Map<String, Object> create_application_with_details(
-//            String firstName,
-//            String lastName,
-//            String middlename,
-//            String mobileNumber,
-//            String dob,
-//            Integer gender,
-//            String address,
-//            String currentCity,
-//            String currentState,
-//            Integer residentialPincode,
-//            String companyName,
-//            Float monthlyIncome,
-//            Integer maritalStatus,
-//            String phone,
-//            String pan,
-//            Float loanAmount,
-//            String email,
-//            String employmentType,
-//            Integer paymentType,
-//            String spouseName,
-//            String workEmail,
-//            Integer workPincode,
-//            String motherName
-//    ) {
-//        Map<String, Object> result = new HashMap<>();
-//        try {
-//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans";
-//
-//            String uniqueId = UUID.randomUUID().toString();
-//
-//            // === Gender Mapping ===
-//            String genderCode = switch (gender) {
-//                case 1 -> "m";
-//                case 2 -> "f";
-//                case 3 -> "o";
-//                default -> "o";
-//            };
-//
-//            // === Title Logic ===
-//            String title = switch (gender) {
-//                case 2 -> (maritalStatus != null && maritalStatus == 1) ? "Mrs" : "Miss";
-//                case 1 -> "Mr";
-//                default -> "Mr";
-//            };
-//
-//            // === Marital Status Mapping ===
-//            String maritalStatusStr = switch (maritalStatus) {
-//                case 1 -> "married";
-//                case 2 -> "unmarried";
-//                case 3 -> "divorced";
-//                case 4 -> "widowed";
-//                default -> "unknown";
-//            };
-//
-//            // === DOB & Age Calculation ===
-//            String dobFormatted = "";
-//            int age = 0;
-//            try {
-//                String[] formats = {"yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "dd-MM-yyyy"};
-//                Date parsedDate = null;
-//                String matchedFormat = null;
-//
-//                for (String format : formats) {
-//                    try {
-//                        parsedDate = new SimpleDateFormat(format).parse(dob);
-//                        matchedFormat = format;
-//                        break;
-//                    } catch (Exception ignored) {}
-//                }
-//
-//                if (parsedDate != null) {
-//                    dobFormatted = new SimpleDateFormat("yyyy-MM-dd").format(parsedDate);
-//                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(matchedFormat);
-//                    LocalDate birthDate = LocalDate.parse(dob, formatter);
-//                    age = Period.between(birthDate, LocalDate.now()).getYears();
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//            // === Build Payload ===
-//            Map<String, Object> data = new HashMap<>();
-//            data.put("customer_category", employmentType != null ? employmentType.toLowerCase() : "salaried");
-//            data.put("client_customer_id", uniqueId);
-//            data.put("product_id", "VIBHUP_CHDB_PL_DLP");
-//            data.put("application_id", uniqueId);
-//            data.put("client_loan_id", uniqueId);
-//            data.put("title", title);
-//            data.put("first_name", firstName);
-//            data.put("middle_name", middlename); // Assuming middlename = fatherName
-//            data.put("last_name", lastName);
-//            data.put("date_of_birth", dobFormatted);
-//            data.put("gender", genderCode);
-//            data.put("employment_details_name", companyName);
-//            data.put("primary_borrower_type", "individual");
-//            data.put("current_address", address);
-//            data.put("current_city", ""); // Optional if city/state are not saved
-//            data.put("current_state", "");
-//            data.put("current_pincode", residentialPincode);
-//            data.put("mobile_number", mobileNumber);
-//            data.put("email", email);
-//            data.put("father_name", middlename);
-//            data.put("mother_name", motherName);
-//            data.put("net_monthly_income", monthlyIncome);
-//            data.put("marital_status", maritalStatusStr);
-//            data.put("spouse_name", "married".equalsIgnoreCase(maritalStatusStr) ? spouseName : null);
-//            data.put("pan_number", pan);
-//            data.put("category", "unsecured");
-//            data.put("sub_category", "fresh");
-//            data.put("principal_amount", loanAmount);
-//            data.put("disbursement_type", "single");
-//            data.put("interest_rate", 25.8);
-//            data.put("tenure", 18);
-//            data.put("tenure_frequency", "monthly");
-//            data.put("repayment_frequency", "monthly");
-//            data.put("number_of_repayments", 18);
-//            data.put("age", age);
-//            data.put("work_email", workEmail);
-//            data.put("work_pincode", workPincode);
-//
-//            String payload = new JSONObject(data).toString();
-//
-//            // === Headers ===
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-//            headers.set("Api-Key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
-//            headers.set("Product-Id", "VIBHUP_CHDB_PL_DLP");
-//
-//            HttpEntity<String> entity = new HttpEntity<>(payload, headers);
-//
-//            RestTemplate restTemplate = new RestTemplate();
-//            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-//
-//            JSONObject json = new JSONObject(response.getBody());
-//
-//            result.put("url", url);
-//            result.put("requestPayload", new JSONObject(data));
-//            result.put("responsePayload", json);
-//            result.put("client_loan_id", json.optString("client_loan_id"));
-//
-//            return result;
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//    }
-
 
     public static Map<String, Object> create_application_with_details(
     		String firstName,          // 1
@@ -186,7 +36,9 @@ public class HDBYubi {
     ) {
     	Map<String, Object> result = new HashMap<>();
         try {
-            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans";
+//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans";
+            
+            String url = "https://uapi.go-yubi.com/colending/clients/vibhuprada/api/v2/loans";
 
             // === Generate IDs ===
 //            String uniqueId = UUID.randomUUID().toString();
@@ -294,7 +146,8 @@ public class HDBYubi {
             // === Build headers ===
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Api-Key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.set("Api-Key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.set("Api-Key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.set("Product-Id", "VIBHUP_CHDB_PL_DLP");
 
             HttpEntity<String> entity = new HttpEntity<>(payload, headers);
@@ -331,13 +184,16 @@ public class HDBYubi {
             }
 
             // Construct the status URL
-            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" 
-                          + clientLoanId + "/get_status";
+//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" 
+//                          + clientLoanId + "/get_status";
+            
+            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + clientLoanId + "/get_status";
 
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.add("api-key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.add("Product-Id", "VIBHUP_CHDB_PL_DLP");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -364,18 +220,21 @@ public class HDBYubi {
     
     public static Map<String, Object> initiateAA(String client_loan_id) {
         try {
-            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=initiate_aa";
+//            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=initiate_aa";
 
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=initiate_aa";
             // Build payload
             Map<String, Object> body = new HashMap<>();
             Map<String, Object> result = new HashMap<>();
             body.put("client_loan_id", client_loan_id);
-            body.put("agreement_id", 2420);
-//            body.put("redirect_url", "http://localhost:3001/yubi/YubiSteps?client_loan_id=" + client_loan_id);
-            body.put("redirect_url", "https://fe.getrysa.com/yubi/YubiSteps?client_loan_id=" + client_loan_id);
+//            body.put("agreement_id", 2420);
+            body.put("agreement_id", 400);
+            body.put("redirect_url", "https://www.arysefin.com/yubi/YubiSteps?client_loan_id=" + client_loan_id);
+//            body.put("redirect_url", "https://fe.getrysa.com/yubi/YubiSteps?client_loan_id=" + client_loan_id);
             // Prepare headers
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Combine headers + body
@@ -415,17 +274,20 @@ public class HDBYubi {
 
     public static JSONObject retrieveReport(String client_loan_id, int requestId) {
         try {
-            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=retrieve_report";
+//            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=retrieve_report";
 
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=retrieve_report";
             // Construct payload
             Map<String, Object> payload = new HashMap<>();
             payload.put("client_loan_id", client_loan_id);
-            payload.put("agreement_id", 2420);
+//            payload.put("agreement_id", 2420);
+            payload.put("agreement_id", 400);
             payload.put("request_id", requestId);
 
             // Set headers
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Wrap payload + headers
@@ -459,17 +321,21 @@ public class HDBYubi {
     
     public static JSONObject initiateKYC(String client_loan_id) {
         try {
-            String url = "https://integ-gateway-sit.go-yubi.in/investor_integration/actions/invoke_api?type=kyc";
+//            String url = "https://integ-gateway-sit.go-yubi.in/investor_integration/actions/invoke_api?type=kyc";
 
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=kyc";
             // Build JSON payload
             Map<String, Object> payload = new HashMap<>();
             payload.put("client_loan_id", client_loan_id);
-            payload.put("agreement_id", 2420);
-            payload.put("redirection_url", "https://fe.getrysa.com/yubi/Selfiepage?client_loan_id=" + client_loan_id);
-
+//            payload.put("agreement_id", 2420);
+            payload.put("agreement_id", 400);
+            payload.put("redirection_url", "https://www.arysefin.com/yubi/Selfiepage?client_loan_id=" + client_loan_id);
+//            payload.put("redirection_url", "https://fe.getrysa.com/yubi/Selfiepage?client_loan_id=" + client_loan_id);
+            
             // Set headers
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Wrap payload + headers
@@ -505,12 +371,14 @@ public class HDBYubi {
             // Prepare payload
             Map<String, Object> data = new HashMap<>();
             data.put("client_loan_id", client_loan_id);
-            data.put("agreement_id", 2420);
+//            data.put("agreement_id", 2420);
+            data.put("agreement_id", 400);
             data.put("selfie_image", selfieImageUrl); // Pass as String URL
 
             // Prepare headers
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Wrap payload + headers
@@ -518,8 +386,9 @@ public class HDBYubi {
 
             RestTemplate restTemplate = new RestTemplate();
 
-            String url = "https://integ-gateway-sit.go-yubi.in/investor_integration/actions/invoke_api?type=update_kyc";
+//            String url = "https://integ-gateway-sit.go-yubi.in/investor_integration/actions/invoke_api?type=update_kyc";
 
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=update_kyc";
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
@@ -576,15 +445,17 @@ public class HDBYubi {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Product-Id", "VIBHUP_CHDB_PL_DLP");
             headers.add("product_id", "VIBHUP_CHDB_PL_DLP");
-            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.add("api-key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(disbursementData, headers);
 
             RestTemplate restTemplate = new RestTemplate();
 
-            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
+//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
 
+            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + client_loan_id;
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.PUT,
@@ -671,14 +542,16 @@ public class HDBYubi {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Product-Id", "VIBHUP_CHDB_PL_DLP");
             headers.add("product_id", "VIBHUP_CHDB_PL_DLP");
-            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.add("api-key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<String> entity = new HttpEntity<>(payload.toString(), headers);
 
             RestTemplate restTemplate = new RestTemplate();
-            String url = "https://uapi-uat.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
+//            String url = "https://uapi-uat.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + client_loan_id;
 
+            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + client_loan_id;
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.PUT,
@@ -703,13 +576,17 @@ public class HDBYubi {
     
     public static JSONObject generateKfsDocument(String client_loan_id) {
         try {
-            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/"
-                    + client_loan_id + "/documents?document_types=kfs_doc&agreement_id=VIBHUP_CHDB_PL_DLP";
+//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/"
+//                    + client_loan_id + "/documents?document_types=kfs_doc&agreement_id=VIBHUP_CHDB_PL_DLP";
+
+            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/"
+                    + client_loan_id + "/documents?document_types=kfs_doc&agreement_id=VIBHUP_CHDB_PL_DLP_1";
 
             RestTemplate restTemplate = new RestTemplate();
-
+            
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.add("api-key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.add("product-id", "VIBHUP_CHDB_PL_DLP");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -737,13 +614,17 @@ public class HDBYubi {
     
     public static JSONObject generateLoanAgreementDocument(String client_loan_id) {
         try {
-            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/"
-                    + client_loan_id + "/documents?document_types=loan_agreement_doc&agreement_id=VIBHUP_CHDB_PL_DLP";
+//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/"
+//                    + client_loan_id + "/documents?document_types=loan_agreement_doc&agreement_id=VIBHUP_CHDB_PL_DLP";
+
+            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/"
+                    + client_loan_id + "/documents?document_types=loan_agreement_doc&agreement_id=VIBHUP_CHDB_PL_DLP_1";
 
             RestTemplate restTemplate = new RestTemplate();
-
+            
             HttpHeaders headers = new HttpHeaders();
-            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.add("api-key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.add("product-id", "VIBHUP_CHDB_PL_DLP");
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -779,22 +660,26 @@ public class HDBYubi {
         String signerName = firstName + " " + lastName;
 
         try {
-            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=eSign";
+//            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=eSign";
+
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=eSign";
 
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
 
             // JSON body
             JSONObject payload = new JSONObject();
             payload.put("client_loan_id", client_loan_id);
-            payload.put("agreement_id", 2420);
+//            payload.put("agreement_id", 2420);
+            payload.put("agreement_id", 400);
             payload.put("document", "www.drive.google.com");
             payload.put("document_type", "KFS/Loan_agreement");
-            payload.put("redirect_url", "https://fe.getrysa.com/yubi/AgreementCompleted?cid=" + client_loan_id);
-
+//            payload.put("redirect_url", "https://fe.getrysa.com/yubi/AgreementDone?cid=" + client_loan_id);
+            payload.put("redirect_url", "https://www.arysefin.com/yubi/AgreementDone?cid=" + client_loan_id);
             // Signer details
             JSONArray signers = new JSONArray();
             JSONObject signer = new JSONObject();
@@ -835,14 +720,16 @@ public class HDBYubi {
     
     public static JSONObject Register_Mandate(String client_loan_id, String accountNo, Float loanAmount) {
         try {
-            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=nach";
+//            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=nach";
+
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=nach";
 
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
-
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
             // Current date = firstCollectionDate
             LocalDate firstDate = LocalDate.now();
             // finalCollectionDate = two months after first date
@@ -852,10 +739,12 @@ public class HDBYubi {
 
             Map<String, Object> data = new HashMap<>();
             data.put("client_loan_id", client_loan_id);
-            data.put("agreement_id", 2420);
+//            data.put("agreement_id", 2420);
+            data.put("agreement_id", 400);
             data.put("maximumAmount", String.valueOf(loanAmount));
             data.put("collectionAmount", String.valueOf(loanAmount));
-            data.put("redirect_url", "https://fe.getrysa.com/yubi/MandateDone?cid=" + client_loan_id);
+//            data.put("redirect_url", "https://fe.getrysa.com/yubi/MandateDone?cid=" + client_loan_id);
+            data.put("redirect_url", "https://www.arysefin.com/yubi/MandateDone?cid=" + client_loan_id);
             data.put("firstCollectionDate", formatter.format(firstDate));
             data.put("finalCollectionDate", formatter.format(finalDate));
             data.put("account_no", accountNo);
@@ -895,18 +784,21 @@ public class HDBYubi {
     public static JSONObject GetMandateStatus(String clientLoanId) {
         JSONObject result = new JSONObject();
         try {
-            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=update_nach";
+//            String url = "https://uapi-uat.go-yubi.in/investor_integration/actions/invoke_api?type=update_nach";
+            String url = "https://uapi.go-yubi.com/investor_integration/actions/invoke_api?type=update_nach";
+
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
-
+//            headers.add("api-key", "de707678e98ec2d3637b0c889153353a4a");
+            headers.add("api-key", "5f022e6d-b3b7-46c5-9193-aac9f383c3b2");
             String txnId = "EN" + System.currentTimeMillis();
 
             Map<String, Object> data = new HashMap<>();
             data.put("client_loan_id", clientLoanId);
-            data.put("agreement_id", 2420);
+//            data.put("agreement_id", 2420);
+            data.put("agreement_id", 400);
             data.put("txn_id", txnId);
 
             HttpEntity<String> entity = new HttpEntity<>(new JSONObject(data).toString(), headers);
@@ -933,13 +825,16 @@ public class HDBYubi {
     
     public static JSONObject sendAgreementSignedAPI(String clientLoanId) {
         try {
-            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + clientLoanId + "/agreement_signed";
+//            String url = "https://colend-uat-01-api.go-yubi.in/colending/clients/vibhuprada/api/v2/loans/" + clientLoanId + "/agreement_signed";
+
+            String url = "https://uapi.go-yubi.com/colending/clients/mclick/api/v2/loans/" + clientLoanId + "/agreement_signed";
 
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+//            headers.add("api-key", "395a7cd0-19e6-41b2-9d45-61f7a2749d11");
+            headers.add("api-key", "df52d6c1-0415-485b-97ad-e24a318d6e2e");
             headers.add("Product-Id", "VIBHUP_CHDB_PL_DLP");
 
             // ✅ Dummy data

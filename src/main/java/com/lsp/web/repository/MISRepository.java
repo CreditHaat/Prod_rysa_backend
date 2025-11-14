@@ -26,6 +26,9 @@ public interface MISRepository extends JpaRepository<MIS, Long> {
 	Optional<MIS> findTopByMobileNumberAndCancelFlagNotOrderByCreateTimeDesc(String mobileNumber, String cancelFlag);
 	
 	Optional<MIS> findTopByMobileNumberOrderByCreateTimeDesc(String mobileNumber);
+	
+	//  Fetch records for a specific agent within a date range (used for Agent MIS)
+    List<MIS> findByAgentIdAndCreateTimeBetween(Integer agentId, LocalDateTime start, LocalDateTime end);
 
 
 

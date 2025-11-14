@@ -28,6 +28,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.HashMap;
 import java.util.function.Supplier;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
 
 //import org.apache.http.HttpStatus;
 import org.json.JSONObject;
@@ -453,7 +455,7 @@ public class UserInfoController {
             }
         }
 
-         @CrossOrigin(origins = "*")
+        @CrossOrigin(origins = "*")
         @PostMapping("/digitapapi")
         public ResponseEntity<ApiResponse> digitapApi(@RequestBody Map<String, Object> payload) {
             try {
@@ -467,49 +469,64 @@ public class UserInfoController {
 
                 // ✅ Extract data
                 JSONObject result = apiResponse.optJSONObject("result");
-                if (result != null && result.has("uan_details")) {
-                    JSONObject uanDetails = result.optJSONObject("uan_details");
+                String name = "";
+                String dob = "";
+                String gender = "";
+                String company = "";
 
-                    if (uanDetails != null && uanDetails.keys().hasNext()) {
-                        String uanKey = (String) uanDetails.keys().next();
-                        JSONObject details = uanDetails.optJSONObject(uanKey);
+                // 1️⃣ Try to extract from UAN details
+                JSONObject uanDetails = result != null ? result.optJSONObject("uan_details") : null;
+                if (uanDetails != null && uanDetails.keys().hasNext()) {
+                    String uanKey = (String) uanDetails.keys().next();
+                    JSONObject details = uanDetails.optJSONObject(uanKey);
 
-                        if (details != null) {
-                            JSONObject basic = details.optJSONObject("basic_details");
-                            JSONObject employment = details.optJSONObject("employment_details");
+                    if (details != null) {
+                        JSONObject basic = details.optJSONObject("basic_details");
+                        JSONObject employment = details.optJSONObject("employment_details");
 
-                            String name = basic != null ? basic.optString("name", "") : "";
-                            String dob = basic != null ? basic.optString("date_of_birth", "") : "";
-                            String gender = basic != null ? basic.optString("gender", "") : "";
-                            String establishmentName = employment != null ? employment.optString("establishment_name", "") : "";
-
-                            if (!name.isEmpty()) {
-                                // ✅ Find existing user (by mobile or PAN)
-                                Optional<UserInfo> existingOpt = Optional.empty();
-
-                                if (dto.getMobileNumber() != null && !dto.getMobileNumber().isEmpty()) {
-                                    existingOpt = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
-                                }
-
-                                if (existingOpt.isPresent()) {
-                                    UserInfo user = existingOpt.get();
-
-                                    // ✅ Update existing record only
-                                    user.setPanName(name);
-                                    user.setDob(dob);
-                                    user.setGender("MALE".equalsIgnoreCase(gender) ? 1 :
-                                                   "FEMALE".equalsIgnoreCase(gender) ? 2 : 3);
-                                    user.setCompanyName(establishmentName);
-                                    user.setActive(1); // ✅ ensure active user
-                                    userInfoRepository.save(user);
-                                } else {
-                                    // Optional: Skip or create new (depending on requirement)
-                                    System.out.println("⚠️ No existing user found for Mobile/PAN, skipping update.");
-                                }
-                            }
-                        }
+                        name = basic != null ? basic.optString("name", "") : "";
+                        dob = basic != null ? basic.optString("date_of_birth", "") : "";
+                        gender = basic != null ? basic.optString("gender", "") : "";
+                        company = employment != null ? employment.optString("establishment_name", "") : "";
                     }
                 }
+
+                // 2️⃣ If UAN missing, try PAN details (fallback)
+                if ((name.isEmpty() || dob.isEmpty()) && result != null) {
+                    JSONObject panDetails = result.optJSONObject("pan_details");
+                    if (panDetails != null) {
+                        if (name.isEmpty()) name = panDetails.optString("name", "");
+                        if (dob.isEmpty()) dob = panDetails.optString("dob", "");
+                        if (gender.isEmpty()) gender = panDetails.optString("gender", "");
+                    }
+                }
+                
+                if (result != null) {
+                    if (name.isEmpty()) name = result.optString("fullname", "");
+                    if (dob.isEmpty()) dob = result.optString("dob", "");
+                    if (gender.isEmpty()) gender = result.optString("gender", "");
+                }
+
+                // 3️⃣ Update user if found via mobile number
+                if (!dto.getMobileNumber().isEmpty() && !name.isEmpty()) {
+                    Optional<UserInfo> existingOpt = userInfoRepository.findByMobileNumber(dto.getMobileNumber().trim());
+
+                    if (existingOpt.isPresent()) {
+                        UserInfo user = existingOpt.get();
+                        user.setPanName(name);
+                        user.setDob(dob);
+                        user.setGender("MALE".equalsIgnoreCase(gender) ? 1 :
+                                       "FEMALE".equalsIgnoreCase(gender) ? 2 : 3);
+                        user.setCompanyName(company);
+                        user.setActive(1);
+                        userInfoRepository.save(user);
+                        System.out.println("✅ User updated successfully via " + 
+                            (uanDetails != null ? "UAN data" : "PAN data"));
+                    } else {
+                        System.out.println("⚠️ No existing user found for Mobile, skipping update.");
+                    }
+                }
+
 
                 // ✅ Prepare API response
                 ApiResponse response = new ApiResponse();

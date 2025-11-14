@@ -34,6 +34,39 @@ public class MISExportController {
         }
     }
 
+@CrossOrigin("*")
+
+//Agent-specific MIS generation
+//@GetMapping("/agent-mis-csv")
+//public String generateAgentMIS() {
+//    try {
+//        // Hardcoded agent ID and email
+//    	Integer agentId = 114521780;
+//        String email = "yogitatekale1911@gmail.com";
+//
+//        String s3FileUrlagent = misExportService.generateMISForAgent(agentId, email);
+//        if (s3FileUrlagent != null) {
+//            return "Agent MIS for " + agentId + " uploaded to S3 successfully: " + s3FileUrlagent;
+//        } else {
+//            return "CSV creation/upload failed for Agent ID: " + agentId;
+//        }
+//    } catch (Exception e) {
+//        e.printStackTrace();
+//        return "Error generating agent MIS: " + e.getMessage();
+//    }
+//}
+
+// 3. Generate and send MIS for ALL agents (the new batch logic)
+@GetMapping("/generate-all-agent-mis")
+public String generateAllAgentsMIS() {
+    try {
+        misExportService.generateAndSendMISForAllAgents();
+        return "All Agent MIS files generated, uploaded, and emails sent successfully!";
+    } catch (Exception e) {
+        e.printStackTrace();
+        return "Failed to generate all agents MIS: " + e.getMessage();
+    }
+}s
 }
 
 

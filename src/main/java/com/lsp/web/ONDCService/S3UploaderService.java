@@ -54,6 +54,37 @@ public class S3UploaderService {
         }
     }
 
+    // =========================================================
+ // Upload Agent MIS File to Separate Folder (AGENT_MIS_PROD)
+ // =========================================================
+ public String uploadAgentMISFileToS3(File file) {
+     try {
+         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
+
+         AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                 .withRegion(Regions.fromName(region))
+                 .build();
+
+         // Different folder for Agent MIS
+         String folderPrefix = "AGENT_MIS_PROD/";
+         String fileKey = folderPrefix + file.getName();
+
+         // Upload file
+         s3Client.putObject(bucketName, fileKey, file);
+
+         // Get file URL
+         String fileUrl = s3Client.getUrl(bucketName, fileKey).toString();
+         System.out.println("Agent MIS file uploaded to S3: " + fileUrl);
+
+         return fileUrl;
+     } catch (Exception e) {
+         e.printStackTrace();
+         System.err.println("Error uploading Agent MIS to S3: " + e.getMessage());
+         return null;
+     }
+ }
+
 }
 
 

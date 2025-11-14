@@ -92,7 +92,7 @@ public class MISExportService {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             // Header
             writer.write(
-                    "\"id\",\"mobileNumber\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\",\"journeyFlag\",\"breFlag\",\"productFlag\",\"pahal\",\"kissht\",\"BFL\",\"ABCL\",\"aspireFin\",\"primeFlag\",\"status\",\"offerFlag\",\"cancelFlag\",\"createTime\"\n"
+                    "\"id\",\"mobileNumber\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\",\"journeyFlag\",\"breFlag\",\"productFlag\",\"pahal\",\"kissht\",\"BFL\",\"ABCL\",\"HDB\",\"aspireFin\",\"primeFlag\",\"status\",\"offerFlag\",\"cancelFlag\",\"createTime\"\n"
 
 //                "\"id\",\"mobileNumber\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\",\"journeyFlag\",\"breFlag\",\"productFlag\",\"pahal\",\"kissht\",\"BFL\",\"ABCL\",\"aspireFin\",\"status\",\"offerFlag\",\\\"cancelFlag\\\",\"createTime\"\n"
             );
@@ -113,6 +113,7 @@ public class MISExportService {
                         csvSafe(record.getKissht()) + "," +
                         csvSafe(record.getBFL()) + "," +
                         csvSafe(record.getABCL()) + "," +
+                        csvSafe(record.getHDB()) + "," +
                         csvSafe(record.getAspireFin()) + "," +
                         csvSafe(record.getPrimeFlag()) + "," + // prime flag added
                         csvSafe(record.getStatus()) + "," +
@@ -316,6 +317,151 @@ public class MISExportService {
         } catch (MessagingException e) {
             System.err.println("Failed to send email: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+
+        // =================Generate MIS for all agents (Main entry method) started================================
+    // ====================================================================================================================================
+    public void generateAndSendMISForAllAgents() {
+        List<Agent> agents = agentRepository.findAll();
+
+        if (agents.isEmpty()) {
+            System.out.println("No agents found in the t_agent table.");
+            return;
+        }
+
+        System.out.println("Total Agents Found: " + agents.size());
+
+        for (Agent agent : agents) {
+            try {
+                Long agentIdLong = agent.getId();
+                Integer agentId = (agentIdLong != null) ? agentIdLong.intValue() : null;
+
+                if (agentId == null) {
+                    System.out.println("Skipping agent with NULL ID");
+                    continue;
+                }
+
+                String email = agent.getEmail();
+                if (email == null || email.trim().isEmpty()) {
+                    System.out.println("Skipping Agent ID " + agentId + " — No email found.");
+                    continue;
+                }
+
+                System.out.println(" Processing Agent ID " + agentId + " (" + email + ")");
+
+                // Generate and upload MIS for this agent
+                String s3Url = generateMISForAgent(agentId, email);
+
+                if (s3Url != null) {
+                    System.out.println("MIS uploaded & emailed successfully for Agent ID " + agentId);
+                } else {
+                    System.out.println(" No MIS data found for Agent ID " + agentId);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error processing agent " + agent.getId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =========================================================
+    // Generate individual agent MIS CSV and upload to S3
+    // =========================================================
+    public String generateMISForAgent(Integer agentId, String email) throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+        String fileName = "AgentMIS_" + agentId + "_" +
+                now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm")) + ".csv";
+        File file = new File(System.getProperty("java.io.tmpdir"), fileName);
+
+        // Fetch MIS data for this agent (last 60 days)
+        List<MIS> records = misRepository.findByAgentIdAndCreateTimeBetween(
+                agentId,
+                LocalDate.now().minusDays(60).atStartOfDay(),
+                LocalDate.now().plusDays(1).atStartOfDay()
+        );
+
+        if (records == null || records.isEmpty()) {
+            return null;
+        }
+
+        // Write CSV file
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write("\"id\",\"userId\",\"customUserId\",\"transactionId\",\"clickId\","
+                    + "\"journeyFlag\",\"primeFlag\",\"status\",\"offerFlag\",\"cancelFlag\",\"createTime\"\n");
+
+            for (MIS record : records) {
+                writer.write(
+                        csvSafe(record.getId()) + "," +
+//                        csvSafe(record.getAgentId()) + "," +
+                        csvSafe(record.getUser() != null ? record.getUser().getId() : "") + "," +
+                        csvSafe(record.getCustomUserId()) + "," +
+                        csvSafe(record.getTransactionId()) + "," +
+                        csvSafe(record.getClickId()) + "," +
+                        csvSafe(record.getJourneyFlag()) + "," +
+                        csvSafe(record.getPrimeFlag()) + "," +
+                        csvSafe(record.getStatus()) + "," +
+                        csvSafe(record.getOfferFlag()) + "," +
+                        csvSafe(record.getCancelFlag()) + "," +
+                        csvSafe(record.getCreateTime()) + "\n"
+                );
+            }
+        }
+
+        System.out.println("CSV Generated for Agent " + agentId + ": " + file.getAbsolutePath());
+
+        // Upload to S3
+        String s3FileUrl = s3UploaderService.uploadAgentMISFileToS3(file);
+
+        if (s3FileUrl != null) {
+            sendAgentEmail(email, s3FileUrl, agentId);
+            file.delete(); // cleanup
+        }
+
+        return s3FileUrl;
+    }
+
+    // =========================================================
+    // Send Email to Agent with S3 Link
+    // =========================================================
+    private void sendAgentEmail(String toEmail, String s3Url, Integer agentId) {
+    	
+        final String username = "mis@credithaat.com";
+        final String password = "misCH@12##$5";
+    	
+//        final String username = "support@arysefin.com";
+//        final String password = "Aryse@11!$04^25$%";
+//
+
+        Properties props = new Properties();
+        props.put("mail.smtp.host", "smtppro.zoho.in");
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.ssl.trust", "smtppro.zoho.in");
+
+        Session session = Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+
+        try {
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(username));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject("CreditHaat - MIS Report for Agent ID: " + agentId);
+            message.setText("Hi,\n\nYour 60-day MIS CSV report has been uploaded to S3.\n\n"
+                    + "Download here:\n" + s3Url + "\n\nBest Regards,\nCreditHaat MIS System");
+
+            Transport.send(message);
+            System.out.println("Email sent successfully to " + toEmail);
+
+        } catch (MessagingException e) {
+            System.err.println(" Failed to send email to " + toEmail + ": " + e.getMessage());
         }
     }
     
